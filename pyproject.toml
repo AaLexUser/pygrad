@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pygrad"
+version = "0.1.0"
+description = "Graph RAG API Doc - Build searchable knowledge graphs from Python repository documentation"
+readme = "README.md"
+license = "BSD-3-Clause"
+requires-python = ">=3.10"
+authors = [
+    { name = "Pygrad Contributors" }
+]
+keywords = ["rag", "knowledge-graph", "api-documentation", "python", "cognee"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "cognee>=0.1.0",
+    "tree-sitter>=0.21.0",
+    "tree-sitter-python>=0.21.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+docs = [
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+
+[project.scripts]
+pygrad = "pygrad.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/pygrad/pygrad"
+Documentation = "https://pygrad.github.io/pygrad/"
+Repository = "https://github.com/pygrad/pygrad"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pygrad"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
