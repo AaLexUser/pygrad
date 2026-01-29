@@ -13,7 +13,7 @@ hide:
 Transform any Python repository into an AI-powered documentation assistant using Graph RAG technology.
 
 [Get Started](getting-started/index.md){ .md-button .md-button--primary }
-[View on GitHub](https://github.com/pygrad/pygrad){ .md-button }
+[View on GitHub](https://github.com/AaLexUser/pygrad){ .md-button }
 
 </div>
 

@@ -45,9 +45,9 @@ docs = [
 pygrad = "pygrad.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/pygrad/pygrad"
-Documentation = "https://pygrad.github.io/pygrad/"
-Repository = "https://github.com/pygrad/pygrad"
+Homepage = "https://github.com/AaLexUser/pygrad"
+Documentation = "https://aalexuser.github.io/pygrad/"
+Repository = "https://github.com/AaLexUser/pygrad"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pygrad"]

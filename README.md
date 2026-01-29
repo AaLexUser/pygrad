@@ -2,7 +2,7 @@
 
 Build searchable knowledge graphs from Python repository documentation using Graph RAG.
 
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://pygrad.github.io/pygrad/)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://aalexuser.github.io/pygrad/)
 [![License](https://img.shields.io/badge/license-BSD%203--Clause-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://python.org)
 
@@ -142,13 +142,13 @@ GRAPH_DATABASE_PROVIDER="neo4j"
 GRAPH_DATABASE_URL="bolt://localhost:7687"
 ```
 
-See the [Configuration Guide](https://pygrad.github.io/pygrad/configuration/) for more options.
+See the [Configuration Guide](https://aalexuser.github.io/pygrad/configuration/) for more options.
 
 ## Development
 
 ```bash
 # Clone
-git clone https://github.com/pygrad/pygrad
+git clone https://github.com/AaLexUser/pygrad
 cd pygrad
 
 # Install
@@ -164,12 +164,12 @@ mkdocs serve
 
 ## Documentation
 
-Full documentation is available at [pygrad.github.io/pygrad](https://pygrad.github.io/pygrad/).
+Full documentation is available at [aalexuser.github.io/pygrad](https://aalexuser.github.io/pygrad/).
 
-- [Getting Started](https://pygrad.github.io/pygrad/getting-started/)
-- [Examples](https://pygrad.github.io/pygrad/examples/)
-- [Architecture](https://pygrad.github.io/pygrad/architecture/)
-- [API Reference](https://pygrad.github.io/pygrad/api/)
+- [Getting Started](https://aalexuser.github.io/pygrad/getting-started/)
+- [Examples](https://aalexuser.github.io/pygrad/examples/)
+- [Architecture](https://aalexuser.github.io/pygrad/architecture/)
+- [API Reference](https://aalexuser.github.io/pygrad/api/)
 
 ## License
 

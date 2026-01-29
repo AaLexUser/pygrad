@@ -1,8 +1,8 @@
 site_name: Pygrad
 site_description: Build searchable knowledge graphs from Python repository documentation using Graph RAG
-site_url: https://pygrad.github.io/pygrad/
-repo_url: https://github.com/pygrad/pygrad
-repo_name: pygrad/pygrad
+site_url: https://aalexuser.github.io/pygrad/
+repo_url: https://github.com/AaLexUser/pygrad
+repo_name: AaLexUser/pygrad
 edit_uri: edit/main/docs/
 
 theme:
@@ -108,7 +108,6 @@ nav:
     - examples/index.md
     - Basic Usage: examples/basic-usage.md
     - Search Queries: examples/searching.md
-    - Custom Processing: examples/custom-processing.md
     - CLI Usage: examples/cli-usage.md
     - Integration: examples/integration.md
   - Architecture:
@@ -131,7 +130,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/pygrad/pygrad
+      link: https://github.com/AaLexUser/pygrad
       name: Pygrad on GitHub
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/pygrad/

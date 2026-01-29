@@ -211,6 +211,5 @@ if __name__ == "__main__":
 
 ## Next Steps
 
-- [Custom processing workflows](custom-processing.md)
 - [CLI usage examples](cli-usage.md)
 - [Integration patterns](integration.md)

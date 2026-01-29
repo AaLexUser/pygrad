@@ -14,7 +14,7 @@ Thank you for your interest in contributing to pygrad!
 
 ```bash
 # Clone the repository
-git clone https://github.com/pygrad/pygrad
+git clone https://github.com/AaLexUser/pygrad
 cd pygrad
 
 # Create virtual environment

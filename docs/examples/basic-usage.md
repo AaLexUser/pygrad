@@ -214,5 +214,4 @@ async def safe_search(url: str, query: str) -> str:
 ## Next Steps
 
 - [Explore search query patterns](searching.md)
-- [Learn about custom processing](custom-processing.md)
 - [Use the CLI](cli-usage.md)

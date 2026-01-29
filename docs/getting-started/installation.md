@@ -21,7 +21,7 @@ pip install git+https://github.com/AaLexUser/pygrad.git
 To install the latest development version:
 
 ```bash
-git clone https://github.com/pygrad/pygrad
+git clone https://github.com/AaLexUser/pygrad
 cd pygrad
 pip install -e ".[dev]"
 ```
