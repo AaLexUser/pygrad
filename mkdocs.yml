@@ -125,6 +125,7 @@ nav:
     - Repository: api/repository.md
     - Processor: api/processor.md
     - Parser: api/parser.md
+    - REST Server: api/server.md
   - Contributing: contributing.md
 
 extra:
