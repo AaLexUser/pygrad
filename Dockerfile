@@ -14,6 +14,6 @@ RUN pip install --no-cache-dir ".[server]"
 # Persistent storage for cloned repos and cognee data
 VOLUME ["/root/.pygrad"]
 
-EXPOSE 8000
+EXPOSE 8446
 
-CMD ["uvicorn", "pygrad.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "pygrad.server:app", "--host", "0.0.0.0", "--port", "8446"]

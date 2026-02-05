@@ -69,7 +69,7 @@ pygrad delete https://github.com/owner/repo
 pip install git+https://github.com/AaLexUser/pygrad.git[server]
 
 # Run
-uvicorn pygrad.server:app --host 0.0.0.0 --port 8000
+uvicorn pygrad.server:app --host 0.0.0.0 --port 8446
 ```
 
 Or with Docker:
@@ -79,7 +79,7 @@ Or with Docker:
 docker build -t pygrad-server .
 
 # Run (pass your .env for LLM / DB config)
-docker run -p 8000:8000 --env-file .env pygrad-server
+docker run -p 8446:8446 --env-file .env pygrad-server
 ```
 
 The server exposes the same five operations as the CLI. See the [REST Server API docs](https://aalexuser.github.io/pygrad/api/server/) for endpoint details.
