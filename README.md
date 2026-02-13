@@ -62,6 +62,28 @@ pygrad visualize -o ./graph.html
 pygrad delete https://github.com/owner/repo
 ```
 
+### REST Server
+
+```bash
+# Install server dependencies
+pip install git+https://github.com/AaLexUser/pygrad.git[server]
+
+# Run
+uvicorn pygrad.server:app --host 0.0.0.0 --port 8446
+```
+
+Or with Docker:
+
+```bash
+# Build
+docker build -t pygrad-server .
+
+# Run (pass your .env for LLM / DB config)
+docker run -p 8446:8446 --env-file .env pygrad-server
+```
+
+The server exposes the same five operations as the CLI. See the [REST Server API docs](https://aalexuser.github.io/pygrad/api/server/) for endpoint details.
+
 ## Features
 
 - **Graph RAG Search**: Semantic search powered by knowledge graphs
