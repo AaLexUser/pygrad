@@ -11,6 +11,7 @@ from xml.dom import minidom
 from pygrad.parser.treesitter import RepoTreeSitter
 from pygrad.processor.example_extractor import extract_examples_from_repository
 from pygrad.processor.utils import extract_important_api, extract_test_example_paths
+from pygrad.processor.neo4j_graph import Neo4jGraphConverter
 
 
 @dataclass
@@ -78,6 +79,52 @@ async def process_repository(
     return result
 
 
+async def process_repository_to_neo4j(
+    repository_path: str,
+    neo4j_uri: str,
+    neo4j_username: str,
+    neo4j_password: str,
+    database: str = "neo4j",
+    clear_existing: bool = True,
+) -> dict[str, int]:
+    """Process repository and save directly to Neo4j graph database.
+
+    Args:
+        repository_path: Path to the repository
+        neo4j_uri: Neo4j connection URI (e.g., "bolt://localhost:7687")
+        neo4j_username: Neo4j username
+        neo4j_password: Neo4j password
+        database: Database name (default: "neo4j")
+        clear_existing: Whether to clear existing graph data
+
+    Returns:
+        Dictionary with counts of created nodes and relationships
+    """
+    repo_path = Path(repository_path)
+    if not repo_path.exists():
+        raise RuntimeError(f"Repository path {repository_path} does not exist")
+
+    processor = PythonRepositoryProcessor(str(repo_path))
+    classes, functions = processor.process_repository_data()
+
+    api_usage_groups = extract_examples_from_repository(
+        str(repo_path), processor.analysis_results
+    )
+    processor._merge_examples_into_data(classes, functions, api_usage_groups)
+
+    stats = processor.save_repository_to_neo4j(
+        classes,
+        functions,
+        neo4j_uri,
+        neo4j_username,
+        neo4j_password,
+        database,
+        clear_existing,
+    )
+
+    return stats
+
+
 class PythonRepositoryProcessor:
     """Processes Python repositories to generate LLM-ready API documentation."""
 
@@ -119,6 +166,35 @@ class PythonRepositoryProcessor:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(xml_content)
         return str(output_path)
+
+    def save_repository_to_neo4j(
+        self,
+        classes: list[ClassInfo],
+        functions: list[FunctionInfo],
+        neo4j_uri: str,
+        neo4j_username: str,
+        neo4j_password: str,
+        database: str = "neo4j",
+        clear_existing: bool = True,
+    ) -> dict[str, int]:
+        """Save processed data to Neo4j graph database.
+
+        Args:
+            classes: List of class information
+            functions: List of function information
+            neo4j_uri: Neo4j connection URI (e.g., "bolt://localhost:7687")
+            neo4j_username: Neo4j username
+            neo4j_password: Neo4j password
+            database: Database name (default: "neo4j")
+            clear_existing: Whether to clear existing graph data
+
+        Returns:
+            Dictionary with counts of created nodes and relationships
+        """
+        with Neo4jGraphConverter(
+            neo4j_uri, neo4j_username, neo4j_password, database
+        ) as converter:
+            return converter.save_repository_graph(classes, functions, clear_existing)
 
     def _process_analysis_results(
         self, analysis_results: dict[str, Any]
