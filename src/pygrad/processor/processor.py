@@ -84,8 +84,9 @@ async def process_repository_to_neo4j(
     neo4j_uri: str,
     neo4j_username: str,
     neo4j_password: str,
+    repository_id: str,
     database: str = "neo4j",
-    clear_existing: bool = True,
+    clear_existing: bool = False,
 ) -> dict[str, int]:
     """Process repository and save directly to Neo4j graph database.
 
@@ -94,8 +95,9 @@ async def process_repository_to_neo4j(
         neo4j_uri: Neo4j connection URI (e.g., "bolt://localhost:7687")
         neo4j_username: Neo4j username
         neo4j_password: Neo4j password
+        repository_id: Repository identifier for node isolation
         database: Database name (default: "neo4j")
-        clear_existing: Whether to clear existing graph data
+        clear_existing: Whether to clear existing graph data for this repository
 
     Returns:
         Dictionary with counts of created nodes and relationships
@@ -118,6 +120,7 @@ async def process_repository_to_neo4j(
         neo4j_uri,
         neo4j_username,
         neo4j_password,
+        repository_id,
         database,
         clear_existing,
     )
@@ -174,8 +177,9 @@ class PythonRepositoryProcessor:
         neo4j_uri: str,
         neo4j_username: str,
         neo4j_password: str,
+        repository_id: str,
         database: str = "neo4j",
-        clear_existing: bool = True,
+        clear_existing: bool = False,
     ) -> dict[str, int]:
         """Save processed data to Neo4j graph database.
 
@@ -185,8 +189,9 @@ class PythonRepositoryProcessor:
             neo4j_uri: Neo4j connection URI (e.g., "bolt://localhost:7687")
             neo4j_username: Neo4j username
             neo4j_password: Neo4j password
+            repository_id: Repository identifier for node isolation
             database: Database name (default: "neo4j")
-            clear_existing: Whether to clear existing graph data
+            clear_existing: Whether to clear existing graph data for this repository
 
         Returns:
             Dictionary with counts of created nodes and relationships
@@ -194,7 +199,7 @@ class PythonRepositoryProcessor:
         with Neo4jGraphConverter(
             neo4j_uri, neo4j_username, neo4j_password, database
         ) as converter:
-            return converter.save_repository_graph(classes, functions, clear_existing)
+            return converter.save_repository_graph(classes, functions, repository_id, clear_existing)
 
     def _process_analysis_results(
         self, analysis_results: dict[str, Any]
