@@ -284,7 +284,7 @@ async def delete(url: str) -> None:
                 for node_type in NODE_LABELS:
                     index_name = f"{repo_id}_{node_type}_embeddings"
                     try:
-                        session.run(f"DROP INDEX {index_name} IF EXISTS")
+                        session.run(f"DROP INDEX `{index_name}` IF EXISTS")
                     except Exception:
                         pass  # Index might not exist
 
