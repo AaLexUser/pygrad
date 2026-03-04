@@ -8,6 +8,8 @@ from neo4j import Driver
 from neo4j_graphrag.embeddings import Embedder
 from tqdm import trange
 
+from pygrad.graphrag.common import NODE_LABELS
+
 
 class CustomEmbedder(Embedder):
     """Custom embedder implementation for OpenAI-compatible embedding APIs.
@@ -182,10 +184,9 @@ def setup_vector_indexes(
         dimensions: Embedding vector dimensions
         database: Database name (default: "neo4j")
     """
-    node_types = ["Class", "Function", "Method", "Example"]
 
     with driver.session(database=database) as session:
-        for node_type in node_types:
+        for node_type in NODE_LABELS:
             index_name = f"{repository_id}_{node_type}_embeddings"
 
             # Drop existing index if present (escape with backticks for special chars)
@@ -228,11 +229,10 @@ async def generate_and_store_embeddings(
     Returns:
         Dictionary with counts of embedded nodes by type
     """
-    node_types = ["Class", "Function", "Method", "Example"]
     stats = {}
 
     with driver.session(database=database) as session:
-        for node_type in node_types:
+        for node_type in NODE_LABELS:
             print(f"embedding {node_type} nodes")
             # Query nodes without embeddings
             if node_type == "Example":

@@ -8,6 +8,9 @@ from neo4j_graphrag.retrievers import VectorCypherRetriever
 from neo4j_graphrag.types import RetrieverResultItem
 
 
+from pygrad.graphrag.common import NODE_LABELS
+
+
 def create_repository_retriever(
     driver: Driver,
     repository_id: str,
@@ -156,18 +159,18 @@ class MultiIndexRetriever:
 
         # Create retrievers for each node type
         self.retrievers = {}
-        for node_type in ["Class", "Function", "Method", "Example"]:
+        for node_label in NODE_LABELS:
             try:
-                self.retrievers[node_type] = create_repository_retriever(
+                self.retrievers[node_label] = create_repository_retriever(
                     driver=driver,
                     repository_id=repository_id,
                     embedder=embedder,
-                    node_type=node_type,
+                    node_type=node_label,
                     database=database,
                 )
             except Exception as e:
                 # Gracefully handle missing indexes
-                print(f"Warning: Could not create retriever for {node_type}: {e}")
+                print(f"Warning: Could not create retriever for {node_label}: {e}")
 
     async def search(
         self,

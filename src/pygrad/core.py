@@ -23,6 +23,7 @@ from pygrad.graphrag.embeddings import (
     generate_and_store_embeddings,
 )
 from pygrad.graphrag.pipeline import PyGradRAGPipeline
+from pygrad.graphrag.common import NODE_LABELS
 
 
 async def add(url: str) -> None:
@@ -273,8 +274,7 @@ async def delete(url: str) -> None:
                 )
 
                 # Drop vector indexes for this repository
-                node_types = ["Class", "Function", "Method"]
-                for node_type in node_types:
+                for node_type in NODE_LABELS:
                     index_name = f"{repo_id}_{node_type}_embeddings"
                     try:
                         session.run(f"DROP INDEX {index_name} IF EXISTS")
