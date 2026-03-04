@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, TYPE_CHECKING
 
-import cognee
-from cognee.api.v1.visualize.visualize import visualize_graph
-from cognee.modules.engine.operations.setup import setup
 from neo4j import GraphDatabase
+
+if TYPE_CHECKING:
+    import cognee
+    from cognee.api.v1.visualize.visualize import visualize_graph
+    from cognee.modules.engine.operations.setup import setup
 
 from pygrad.config import REPO_STORAGE, ensure_storage_exists
 from pygrad.repository import clone_repository, get_repository_id
@@ -44,6 +46,7 @@ async def add(url: str) -> None:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
+        from cognee.modules.engine.operations.setup import setup
         await setup()
         xml_api_path = await _create_xml_api_doc(url)
         await _cognee_add_xml_api(xml_api_path, repo_id)
@@ -130,6 +133,8 @@ async def search(url: str, query: str) -> str:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
+        import cognee
+        from cognee.modules.engine.operations.setup import setup
         await setup()
         dataset = await get_dataset(repo_id)
 
@@ -250,6 +255,8 @@ async def delete(url: str) -> None:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
+        import cognee
+        from cognee.modules.engine.operations.setup import setup
         await setup()
         dataset = await get_dataset(repo_id)
         if dataset:
@@ -300,6 +307,8 @@ async def list_datasets() -> List[Any]:
     backend = get_search_backend()
 
     if backend == SearchBackend.COGNEE:
+        import cognee
+        from cognee.modules.engine.operations.setup import setup
         await setup()
         return await cognee.datasets.list_datasets()
 
@@ -378,6 +387,7 @@ def _split_xml_api(xml_api_path: Path) -> List[str]:
 
 async def _cognee_add_xml_api(xml_api_path: Path, dataset_name: str) -> None:
     """Add XML API to Cognee knowledge graph."""
+    import cognee
     custom_prompt = """
     Extract methods, functions and classes as entities, add their parameters to description.
     Connect classes to methods with the relationship "has_method".
