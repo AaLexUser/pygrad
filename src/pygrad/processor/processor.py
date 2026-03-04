@@ -348,11 +348,33 @@ class PythonRepositoryProcessor:
                         self._format_usage_example(ex) for ex in usage_group.examples
                     ]
 
+    def _make_relative_path(self, path: str) -> str:
+        """Convert an absolute path to a path relative to the repository root.
+
+        Args:
+            path: Absolute path to convert
+
+        Returns:
+            Path relative to repository root
+        """
+        try:
+            path_obj = Path(path)
+            # If path is already relative, return as is
+            if not path_obj.is_absolute():
+                return path
+            # Convert to relative path from repo root
+            rel_path = path_obj.relative_to(self.repo_path)
+            return str(rel_path)
+        except (ValueError, TypeError):
+            # If conversion fails (path is outside repo), return as is
+            return path
+
+
     def _format_usage_example(self, example: Any) -> str:
         """Format a UsageExample as JSON string."""
         return json.dumps(
             {
-                "from": example.source_file,
+                "from": self._make_relative_path(example.source_file),
                 "type": example.example_type,
                 "line": example.start_line,
                 "variable": getattr(example, "variable_name", None),
@@ -375,7 +397,7 @@ class PythonRepositoryProcessor:
         for file_path, score in important_files:
             file_elem = ET.SubElement(files_elem, "file")
             file_elem.set("score", str(int(round(score))))
-            file_elem.text = file_path
+            file_elem.text = self._make_relative_path(file_path)
 
         # Classes
         for cls in classes:

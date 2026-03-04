@@ -46,7 +46,6 @@ async def add(url: str) -> None:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
-        from cognee.modules.engine.operations.setup import setup
         await setup()
         xml_api_path = await _create_xml_api_doc(url)
         await _cognee_add_xml_api(xml_api_path, repo_id)
@@ -133,8 +132,6 @@ async def search(url: str, query: str) -> str:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
-        import cognee
-        from cognee.modules.engine.operations.setup import setup
         await setup()
         dataset = await get_dataset(repo_id)
 
@@ -255,8 +252,6 @@ async def delete(url: str) -> None:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
-        import cognee
-        from cognee.modules.engine.operations.setup import setup
         await setup()
         dataset = await get_dataset(repo_id)
         if dataset:
@@ -307,8 +302,6 @@ async def list_datasets() -> List[Any]:
     backend = get_search_backend()
 
     if backend == SearchBackend.COGNEE:
-        import cognee
-        from cognee.modules.engine.operations.setup import setup
         await setup()
         return await cognee.datasets.list_datasets()
 
