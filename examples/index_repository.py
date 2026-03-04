@@ -36,7 +36,8 @@ async def main():
     NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
     EMBEDDING_DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
 
-    repository_path = "/home/stas/.autods/repos/sb-ai-lab/replay"
+    #repository_path = "/home/stas/.autods/repos/sb-ai-lab/replay"
+    repository_path = "/home/stas/.autods/repos/sb-ai-lab/lightautoml"
     repository_id = get_repository_id(repository_path)
 
     print("PyGrad Repository Indexing Pipeline")

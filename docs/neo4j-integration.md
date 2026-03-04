@@ -302,4 +302,4 @@ pytest tests/test_neo4j_graph.py -v
 
 - [Neo4j Python Driver Documentation](https://neo4j.com/docs/python-manual/current/)
 - [Cypher Query Language](https://neo4j.com/docs/cypher-manual/current/)
-- [Example Usage](../examples/README.md)
+- [Example Usage](examples/index.md)
