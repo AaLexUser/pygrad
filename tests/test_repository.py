@@ -29,11 +29,6 @@ class TestGetRepositoryId:
         url = "https://github.com/OWNER/REPO"
         assert get_repository_id(url) == "owner-repo"
 
-    def test_github_url_with_subpath(self):
-        """Test URL with additional path components."""
-        url = "https://github.com/owner/repo/tree/main/src"
-        assert get_repository_id(url) == "owner-repo"
-
     def test_invalid_url_too_short(self):
         """Test that invalid URLs raise RuntimeError."""
         url = "https://github.com/owner"

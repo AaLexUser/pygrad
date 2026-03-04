@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, TYPE_CHECKING
 
-import cognee
-from cognee.api.v1.visualize.visualize import visualize_graph
-from cognee.modules.engine.operations.setup import setup
 from neo4j import GraphDatabase
+
+if TYPE_CHECKING:
+    import cognee
+    from cognee.api.v1.visualize.visualize import visualize_graph
+    from cognee.modules.engine.operations.setup import setup
 
 from pygrad.config import REPO_STORAGE, ensure_storage_exists
 from pygrad.repository import clone_repository, get_repository_id
@@ -277,7 +279,7 @@ async def delete(url: str) -> None:
                 for node_type in NODE_LABELS:
                     index_name = f"{repo_id}_{node_type}_embeddings"
                     try:
-                        session.run(f"DROP INDEX {index_name} IF EXISTS")
+                        session.run(f"DROP INDEX `{index_name}` IF EXISTS")
                     except Exception:
                         pass  # Index might not exist
 
@@ -378,6 +380,7 @@ def _split_xml_api(xml_api_path: Path) -> List[str]:
 
 async def _cognee_add_xml_api(xml_api_path: Path, dataset_name: str) -> None:
     """Add XML API to Cognee knowledge graph."""
+    import cognee
     custom_prompt = """
     Extract methods, functions and classes as entities, add their parameters to description.
     Connect classes to methods with the relationship "has_method".

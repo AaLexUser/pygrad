@@ -118,7 +118,7 @@ def test_save_repository_graph(mock_graph_db, sample_class, sample_function):
 
     converter = Neo4jGraphConverter("bolt://localhost:7687", "neo4j", "password")
     stats = converter.save_repository_graph(
-        classes=[sample_class], functions=[sample_function], clear_existing=True
+        classes=[sample_class], functions=[sample_function], repository_id="test-repo", clear_existing=True
     )
 
     # Verify session was created
@@ -176,7 +176,7 @@ def test_example_deduplication(mock_graph_db):
 
     converter = Neo4jGraphConverter("bolt://localhost:7687", "neo4j", "password")
     stats = converter.save_repository_graph(
-        classes=[], functions=[func1, func2], clear_existing=True
+        classes=[], functions=[func1, func2], repository_id="test-repo", clear_existing=True
     )
 
     # Should have 2 functions but only 1 unique example
