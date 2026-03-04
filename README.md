@@ -86,9 +86,12 @@ The server exposes the same five operations as the CLI. See the [REST Server API
 
 ## Features
 
+- **Dual Search Backends**: Choose between Cognee or Neo4j GraphRAG
 - **Graph RAG Search**: Semantic search powered by knowledge graphs
 - **Automatic API Extraction**: Parses classes, functions, methods, and docstrings
 - **Usage Example Mining**: Finds real examples from tests and documentation
+- **Repository Isolation**: Multiple repositories in a single Neo4j database
+- **Vector Search**: Semantic similarity search with embeddings
 - **Local LLM Support**: Works with Ollama for fully offline operation
 - **Tree-sitter Parsing**: Fast and accurate Python code analysis
 
@@ -101,8 +104,20 @@ Repository → Parse (TreeSitter) → Extract API → Build Graph → Search (RA
 1. **Clone**: Downloads the repository
 2. **Parse**: Uses TreeSitter to extract code structure
 3. **Extract**: Identifies classes, functions, docstrings, and examples
-4. **Index**: Builds a knowledge graph with Cognee
+4. **Index**: Builds a knowledge graph (Cognee or Neo4j GraphRAG)
 5. **Search**: Enables natural language queries over the codebase
+
+### Backend Comparison
+
+| Feature | Cognee | Neo4j GraphRAG |
+|---------|--------|----------------|
+| Setup | Automatic | Requires Neo4j |
+| Repository Isolation | Datasets | Property-based |
+| Vector Search | ✓ | ✓ |
+| Graph Traversal | ✓ | ✓ (Cypher) |
+| Visualization | Built-in | Neo4j Browser |
+| Production Ready | ✓ | ✓ |
+| Custom Queries | Limited | Full Cypher |
 
 ## API Reference
 
@@ -120,6 +135,54 @@ Repository → Parse (TreeSitter) → Extract API → Build Graph → Search (RA
 ## Configuration
 
 Pygrad uses environment variables for configuration:
+
+### Search Backend
+
+Pygrad supports two search backends:
+
+**Cognee (Default)**
+```bash
+SEARCH_BACKEND="cognee"
+```
+
+**Neo4j GraphRAG** (with repository isolation)
+```bash
+SEARCH_BACKEND="neo4j-graphrag"
+
+# Neo4j connection
+NEO4J_URI="bolt://localhost:7687"
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="pleaseletmein"
+NEO4J_DATABASE="neo4j"
+```
+
+#### Quick Start with Docker
+
+Start Neo4j using the included docker-compose:
+
+```bash
+# Start Neo4j
+docker-compose up -d
+
+# Or use the helper script
+./scripts/neo4j.sh start
+
+# Check status
+./scripts/neo4j.sh status
+
+# View logs
+./scripts/neo4j.sh logs
+
+# Open Cypher shell
+./scripts/neo4j.sh shell
+
+# Test connection
+./scripts/neo4j.sh test
+```
+
+Access Neo4j Browser at http://localhost:7474 (credentials: neo4j/pleaseletmein)
+
+See [docs/neo4j-setup.md](docs/neo4j-setup.md) for detailed setup instructions.
 
 ### Ollama (Local LLM)
 
@@ -147,10 +210,10 @@ EMBEDDING_PROVIDER="openai"
 EMBEDDING_MODEL="text-embedding-3-small"
 ```
 
-### Database (Production)
+### Database Options
 
+**Cognee Backend** (PostgreSQL + pgvector for production)
 ```bash
-# PostgreSQL + pgvector
 VECTOR_DB_PROVIDER="pgvector"
 DB_PROVIDER="postgres"
 DB_HOST="localhost"
@@ -159,9 +222,17 @@ DB_NAME="cognee_db"
 DB_USERNAME="cognee"
 DB_PASSWORD="cognee"
 
-# Neo4j (optional)
 GRAPH_DATABASE_PROVIDER="neo4j"
 GRAPH_DATABASE_URL="bolt://localhost:7687"
+```
+
+**Neo4j GraphRAG Backend**
+```bash
+SEARCH_BACKEND="neo4j-graphrag"
+NEO4J_URI="bolt://localhost:7687"
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="your-secure-password"
+NEO4J_DATABASE="neo4j"
 ```
 
 See the [Configuration Guide](https://aalexuser.github.io/pygrad/configuration/) for more options.

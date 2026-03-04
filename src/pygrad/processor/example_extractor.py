@@ -112,13 +112,14 @@ class ExampleExtractor:
                         details = item["details"]
                         if not details["method_name"].startswith("test_"):
                             continue
+                        source_code = details.get("source_code", "")
                         examples.append(
                             UsageExample(
                                 source_file=file_path,
                                 function_name=details["method_name"],
-                                source_code=details.get("source_code", ""),
+                                source_code=source_code,
                                 start_line=details.get("start_line", 0),
-                                used_api_elements=set(),
+                                used_api_elements=self._find_used_api_elements(source_code),
                                 example_type="test",
                                 docstring=details.get("docstring"),
                             )
@@ -127,13 +128,14 @@ class ExampleExtractor:
                         for method in item.get("methods", []):
                             if not method["method_name"].startswith("test_"):
                                 continue
+                            source_code = method.get("source_code", "")
                             examples.append(
                                 UsageExample(
                                     source_file=file_path,
                                     function_name=f"{item['name']}.{method['method_name']}",
-                                    source_code=method.get("source_code", ""),
+                                    source_code=source_code,
                                     start_line=method.get("start_line", 0),
-                                    used_api_elements=set(),
+                                    used_api_elements=self._find_used_api_elements(source_code),
                                     example_type="test",
                                     docstring=method.get("docstring"),
                                 )
@@ -154,13 +156,14 @@ class ExampleExtractor:
                         details = item["details"]
                         if details["method_name"].startswith("_"):
                             continue
+                        source_code = details.get("source_code", "")
                         examples.append(
                             UsageExample(
                                 source_file=file_path,
                                 function_name=details["method_name"],
-                                source_code=details.get("source_code", ""),
+                                source_code=source_code,
                                 start_line=details.get("start_line", 0),
-                                used_api_elements=set(),
+                                used_api_elements=self._find_used_api_elements(source_code),
                                 example_type="example",
                                 docstring=details.get("docstring"),
                             )
@@ -181,6 +184,28 @@ class ExampleExtractor:
                 grouped[api_path].examples.append(example)
                 grouped[api_path].total_usage_count += 1
         return dict(grouped)
+
+    def _find_used_api_elements(self, source_code: str) -> set[str]:
+        """Find which API elements are used in the source code."""
+        used_elements = set()
+
+        # Check each API element to see if it appears in the source code
+        for api_path in self.api_elements:
+            # Split api_path to check for both full path and simple name
+            parts = api_path.split(".")
+
+            # Check if the full API path appears (e.g., "module.ClassName.method_name")
+            if api_path in source_code:
+                used_elements.add(api_path)
+                continue
+
+            # Check if class name appears (for imports like "from module import ClassName")
+            if len(parts) >= 2:
+                class_or_func_name = parts[-1]
+                if class_or_func_name in source_code:
+                    used_elements.add(api_path)
+
+        return used_elements
 
     def _get_module_path(self, file_path: str) -> str:
         """Generate module path from file path."""

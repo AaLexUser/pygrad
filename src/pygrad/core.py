@@ -2,18 +2,28 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, List
 
 import cognee
 from cognee.api.v1.visualize.visualize import visualize_graph
 from cognee.modules.engine.operations.setup import setup
+from neo4j import GraphDatabase
 
 from pygrad.config import REPO_STORAGE, ensure_storage_exists
 from pygrad.repository import clone_repository, get_repository_id
 from pygrad.xmlapi import extract_entities
-from pygrad.processor.processor import process_repository
+from pygrad.processor.processor import process_repository, process_repository_to_neo4j
 from pygrad.prompt_store import prompt_store
+from pygrad.graphrag.config import get_search_backend, SearchBackend, get_neo4j_config
+from pygrad.graphrag.embeddings import (
+    create_embedder_from_env,
+    setup_vector_indexes,
+    generate_and_store_embeddings,
+)
+from pygrad.graphrag.pipeline import PyGradRAGPipeline
+from pygrad.graphrag.common import NODE_LABELS
 
 
 async def add(url: str) -> None:
@@ -30,9 +40,69 @@ async def add(url: str) -> None:
         >>> import pygrad as pg
         >>> await pg.add("https://github.com/psf/requests")
     """
-    await setup()
-    xml_api_path = await _create_xml_api_doc(url)
-    await _cognee_add_xml_api(xml_api_path, get_repository_id(url))
+    backend = get_search_backend()
+    repo_id = get_repository_id(url)
+
+    if backend == SearchBackend.COGNEE:
+        await setup()
+        xml_api_path = await _create_xml_api_doc(url)
+        await _cognee_add_xml_api(xml_api_path, repo_id)
+
+    elif backend == SearchBackend.NEO4J_GRAPHRAG:
+        # Clone repository
+        ensure_storage_exists()
+        repo_path = Path(REPO_STORAGE) / repo_id
+        if not repo_path.exists():
+            clone_repository(url, repo_path)
+
+        # Get Neo4j configuration
+        neo4j_config = get_neo4j_config()
+
+        # Process repository to Neo4j
+        stats = await process_repository_to_neo4j(
+            repository_path=str(repo_path),
+            neo4j_uri=neo4j_config.uri,
+            neo4j_username=neo4j_config.username,
+            neo4j_password=neo4j_config.password,
+            repository_id=repo_id,
+            database=neo4j_config.database,
+            clear_existing=False,
+        )
+
+        print(f"Created {stats['classes']} classes, {stats['functions']} functions, "
+              f"{stats['methods']} methods, {stats['examples']} examples")
+
+        # Setup vector indexes and generate embeddings
+        driver = GraphDatabase.driver(
+            neo4j_config.uri,
+            auth=(neo4j_config.username, neo4j_config.password),
+        )
+
+        try:
+            # Get embedding dimensions from environment
+            dimensions = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
+
+            # Create vector indexes
+            setup_vector_indexes(
+                driver=driver,
+                repository_id=repo_id,
+                dimensions=dimensions,
+                database=neo4j_config.database,
+            )
+            print(f"Created vector indexes for repository: {repo_id}")
+
+            # Generate and store embeddings
+            embedder = create_embedder_from_env()
+            embedding_stats = await generate_and_store_embeddings(
+                driver=driver,
+                repository_id=repo_id,
+                embedder=embedder,
+                database=neo4j_config.database,
+            )
+            print(f"Generated embeddings: {embedding_stats}")
+
+        finally:
+            driver.close()
 
 
 async def search(url: str, query: str) -> str:
@@ -56,30 +126,69 @@ async def search(url: str, query: str) -> str:
         ... )
         >>> print(result)
     """
-    await setup()
+    backend = get_search_backend()
     repo_id = get_repository_id(url)
-    dataset = await get_dataset(repo_id)
 
-    if not dataset:
-        return "The library is not yet indexed."
+    if backend == SearchBackend.COGNEE:
+        await setup()
+        dataset = await get_dataset(repo_id)
 
-    system_prompt = prompt_store.load("grad.md")
-    result = await cognee.search(
-        query_text=query,
-        dataset_ids=[dataset.id],
-        query_type=cognee.SearchType.GRAPH_COMPLETION_CONTEXT_EXTENSION,
-        system_prompt=system_prompt,
-    )
+        if not dataset:
+            return "The library is not yet indexed."
 
-    if isinstance(result, builtins_list):
-        if not result:
-            return "No results found."
-        return "\n".join(
-            str(item.get("search_result", ["No results found."])[0])  # type: ignore[union-attr]
-            for item in result
+        system_prompt = prompt_store.load("grad.md")
+        result = await cognee.search(
+            query_text=query,
+            dataset_ids=[dataset.id],
+            query_type=cognee.SearchType.GRAPH_COMPLETION_CONTEXT_EXTENSION,
+            system_prompt=system_prompt,
         )
-    if result and hasattr(result, "result") and result.result:
-        return str(result.result)
+
+        if isinstance(result, builtins_list):
+            if not result:
+                return "No results found."
+            return "\n".join(
+                str(item.get("search_result", ["No results found."])[0])  # type: ignore[union-attr]
+                for item in result
+            )
+        if result and hasattr(result, "result") and result.result:
+            return str(result.result)
+        return "No results found."
+
+    elif backend == SearchBackend.NEO4J_GRAPHRAG:
+        # Get Neo4j configuration
+        neo4j_config = get_neo4j_config()
+
+        # Create driver
+        driver = GraphDatabase.driver(
+            neo4j_config.uri,
+            auth=(neo4j_config.username, neo4j_config.password),
+        )
+
+        try:
+            # Check if repository exists
+            with driver.session(database=neo4j_config.database) as session:
+                result = session.run(
+                    "MATCH (n {repository_id: $repo_id}) RETURN count(n) as count",
+                    repo_id=repo_id,
+                )
+                count = result.single()["count"]
+                if count == 0:
+                    return "The library is not yet indexed."
+
+            # Create pipeline and search
+            pipeline = PyGradRAGPipeline(
+                driver=driver,
+                repository_id=repo_id,
+                database=neo4j_config.database,
+            )
+
+            response = await pipeline.search(query, top_k=5)
+            return response
+
+        finally:
+            driver.close()
+
     return "No results found."
 
 
@@ -137,10 +246,43 @@ async def delete(url: str) -> None:
         >>> import pygrad as pg
         >>> await pg.delete("https://github.com/owner/repo")
     """
-    await setup()
-    dataset = await get_dataset(get_repository_id(url))
-    if dataset:
-        await cognee.datasets.delete_dataset(dataset.id)
+    backend = get_search_backend()
+    repo_id = get_repository_id(url)
+
+    if backend == SearchBackend.COGNEE:
+        await setup()
+        dataset = await get_dataset(repo_id)
+        if dataset:
+            await cognee.datasets.delete_dataset(dataset.id)
+
+    elif backend == SearchBackend.NEO4J_GRAPHRAG:
+        # Get Neo4j configuration
+        neo4j_config = get_neo4j_config()
+
+        # Create driver
+        driver = GraphDatabase.driver(
+            neo4j_config.uri,
+            auth=(neo4j_config.username, neo4j_config.password),
+        )
+
+        try:
+            with driver.session(database=neo4j_config.database) as session:
+                # Delete all nodes for this repository
+                session.run(
+                    "MATCH (n {repository_id: $repo_id}) DETACH DELETE n",
+                    repo_id=repo_id,
+                )
+
+                # Drop vector indexes for this repository
+                for node_type in NODE_LABELS:
+                    index_name = f"{repo_id}_{node_type}_embeddings"
+                    try:
+                        session.run(f"DROP INDEX {index_name} IF EXISTS")
+                    except Exception:
+                        pass  # Index might not exist
+
+        finally:
+            driver.close()
 
 
 async def list_datasets() -> List[Any]:
@@ -155,8 +297,51 @@ async def list_datasets() -> List[Any]:
         >>> for ds in datasets:
         ...     print(ds.name)
     """
-    await setup()
-    return await cognee.datasets.list_datasets()
+    backend = get_search_backend()
+
+    if backend == SearchBackend.COGNEE:
+        await setup()
+        return await cognee.datasets.list_datasets()
+
+    elif backend == SearchBackend.NEO4J_GRAPHRAG:
+        # Get Neo4j configuration
+        neo4j_config = get_neo4j_config()
+
+        # Create driver
+        driver = GraphDatabase.driver(
+            neo4j_config.uri,
+            auth=(neo4j_config.username, neo4j_config.password),
+        )
+
+        try:
+            with driver.session(database=neo4j_config.database) as session:
+                # Query for distinct repository_ids
+                result = session.run(
+                    """
+                    MATCH (n)
+                    WHERE n.repository_id IS NOT NULL
+                    RETURN DISTINCT n.repository_id as repository_id
+                    ORDER BY n.repository_id
+                    """
+                )
+
+                # Create dataset-like objects
+                datasets = []
+                for record in result:
+                    repo_id = record["repository_id"]
+                    # Create a simple object with name and id attributes
+                    dataset = type("Dataset", (), {
+                        "name": repo_id,
+                        "id": repo_id,
+                    })()
+                    datasets.append(dataset)
+
+                return datasets
+
+        finally:
+            driver.close()
+
+    return []
 
 
 # Keep a reference to built-in list for isinstance checks

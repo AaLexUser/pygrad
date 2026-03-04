@@ -23,7 +23,7 @@ def get_repository_id(url: str) -> str:
         raise RuntimeError(
             f"Invalid GitHub URL format. Expected: https://github.com/owner/repo. Got: {url}"
         )
-    owner, repo_name = path_parts[:2]
+    owner, repo_name = path_parts[-2:]
     return f"{owner.lower()}-{repo_name.lower()}"
 
 

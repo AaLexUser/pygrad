@@ -119,6 +119,9 @@ nav:
     - Ollama (Local): configuration/ollama.md
     - OpenAI: configuration/openai.md
     - Database: configuration/database.md
+  - Neo4j:
+    - Integration: neo4j-integration.md
+    - Setup: neo4j-setup.md
   - API Reference:
     - api/index.md
     - Core Functions: api/core.md
