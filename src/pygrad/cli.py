@@ -5,8 +5,6 @@ import asyncio
 import sys
 
 from dotenv import load_dotenv
-
-# Load .env file from current directory or parent directories
 load_dotenv()
 
 import pygrad as pg
