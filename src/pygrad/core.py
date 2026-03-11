@@ -8,6 +8,9 @@ from typing import Any, List, TYPE_CHECKING
 
 from neo4j import GraphDatabase
 
+from dotenv import load_dotenv
+load_dotenv()
+
 if TYPE_CHECKING:
     import cognee
     from cognee.api.v1.visualize.visualize import visualize_graph
