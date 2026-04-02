@@ -1,7 +1,5 @@
 """Tests for PythonRepositoryProcessor."""
 
-import pytest
-
 from pygrad.processor.processor import (
     ClassInfo,
     FunctionInfo,
@@ -34,7 +32,7 @@ class TestPythonRepositoryProcessor:
     def test_process_repository_excludes_tests(self, sample_repo):
         """Test that test directories are excluded."""
         processor = PythonRepositoryProcessor(str(sample_repo))
-        classes, functions = processor.process_repository_data()
+        _classes, functions = processor.process_repository_data()
 
         # test_core.py has test_example function, should be excluded
         func_names = [f.name for f in functions]
@@ -49,9 +47,7 @@ class TestPythonRepositoryProcessor:
         processor = PythonRepositoryProcessor(str(sample_repo))
 
         # Test module path for a file in mypackage/
-        module_path = processor._get_module_path(
-            str(sample_repo / "mypackage" / "core.py")
-        )
+        module_path = processor._get_module_path(str(sample_repo / "mypackage" / "core.py"))
         assert module_path == "mypackage.core"
 
     def test_clean_docstring(self, sample_repo):
@@ -95,9 +91,7 @@ class TestPythonRepositoryProcessor:
         ]
         important_files = [("test.py", 100.0)]
 
-        output_path = processor.save_repository_data(
-            classes, functions, important_files, "test_api.xml"
-        )
+        output_path = processor.save_repository_data(classes, functions, important_files, "test_api.xml")
 
         assert output_path.endswith("test_api.xml")
 

@@ -78,9 +78,7 @@ class ExampleExtractor:
                     class_name = item["name"]
                     if class_name.startswith("_"):
                         continue
-                    class_api_path = (
-                        f"{module_path}.{class_name}" if module_path else class_name
-                    )
+                    class_api_path = f"{module_path}.{class_name}" if module_path else class_name
                     self.api_elements.add(class_api_path)
 
                     for method in item.get("methods", []):
@@ -91,11 +89,7 @@ class ExampleExtractor:
                 elif item["type"] == "function":
                     function_name = item["details"]["method_name"]
                     if not function_name.startswith("_"):
-                        api_path = (
-                            f"{module_path}.{function_name}"
-                            if module_path
-                            else function_name
-                        )
+                        api_path = f"{module_path}.{function_name}" if module_path else function_name
                         self.api_elements.add(api_path)
 
     def _extract_from_tests(self, test_paths: list[str]) -> list[UsageExample]:
@@ -170,13 +164,9 @@ class ExampleExtractor:
                         )
         return examples
 
-    def _group_by_api_element(
-        self, examples: list[UsageExample]
-    ) -> dict[str, APIUsageGroup]:
+    def _group_by_api_element(self, examples: list[UsageExample]) -> dict[str, APIUsageGroup]:
         """Group examples by API elements they demonstrate."""
-        grouped: dict[str, APIUsageGroup] = defaultdict(
-            lambda: APIUsageGroup(api_path="", examples=[])
-        )
+        grouped: dict[str, APIUsageGroup] = defaultdict(lambda: APIUsageGroup(api_path="", examples=[]))
         for example in examples:
             for api_path in example.used_api_elements:
                 if api_path not in grouped:
@@ -211,7 +201,7 @@ class ExampleExtractor:
         """Generate module path from file path."""
         try:
             rel_path = Path(file_path).relative_to(self.repo_path)
-            module_parts = list(rel_path.parts)[:-1] + [rel_path.stem]
+            module_parts = [*list(rel_path.parts)[:-1], rel_path.stem]
             module_parts = [p for p in module_parts if p and p != "__init__"]
             return ".".join(module_parts)
         except (ValueError, AttributeError):
@@ -229,6 +219,4 @@ def extract_examples_from_repository(
         treesitter = RepoTreeSitter(repo_path)
         project_structure = treesitter.analyze_directory(repo_path)
 
-    return extractor.extract_examples(
-        project_structure, paths["test"], paths["example"]
-    )
+    return extractor.extract_examples(project_structure, paths["test"], paths["example"])

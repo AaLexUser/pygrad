@@ -12,7 +12,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 @dataclass
@@ -90,15 +90,16 @@ class NotebookExampleExtractor:
         if candidate_path in self.api_elements:
             return candidate_path
 
-        matches = self.simplified_to_qualified.get(candidate_path)
-        if matches:
-            return next(iter(matches)) if len(matches) == 1 else min(matches, key=len)
-
-        return None
+        matches: set[str] | None = self.simplified_to_qualified.get(candidate_path)
+        if matches is None:
+            return None
+        if len(matches) == 1:
+            return next(iter(matches))
+        return cast(str, min(matches, key=len))
 
     def extract_from_notebook(self, notebook_path: str) -> list[NotebookExample]:
         """Extract examples from a single Jupyter notebook."""
-        with open(notebook_path, "r", encoding="utf-8") as f:
+        with open(notebook_path, encoding="utf-8") as f:
             notebook_data = json.load(f)
 
         cells = self._parse_notebook_cells(notebook_data)
@@ -108,9 +109,7 @@ class NotebookExampleExtractor:
 
         return examples
 
-    def extract_from_notebooks(
-        self, notebook_paths: list[str]
-    ) -> list[NotebookExample]:
+    def extract_from_notebooks(self, notebook_paths: list[str]) -> list[NotebookExample]:
         """Extract examples from multiple Jupyter notebooks."""
         all_examples: list[NotebookExample] = []
 
@@ -122,9 +121,7 @@ class NotebookExampleExtractor:
 
         return all_examples
 
-    def _parse_notebook_cells(
-        self, notebook_data: dict[str, Any]
-    ) -> list[NotebookCell]:
+    def _parse_notebook_cells(self, notebook_data: dict[str, Any]) -> list[NotebookCell]:
         """Parse notebook cells into NotebookCell objects."""
         cells: list[NotebookCell] = []
 
@@ -171,29 +168,21 @@ class NotebookExampleExtractor:
                 text_parts.append("".join(text) if isinstance(text, list) else text)
 
         elif output_type == "error":
-            text_parts.append(
-                f"Error: {output.get('ename', '')}: {output.get('evalue', '')}"
-            )
+            text_parts.append(f"Error: {output.get('ename', '')}: {output.get('evalue', '')}")
 
         full_text = "\n".join(text_parts)
         lines = full_text.split("\n")
 
         if len(lines) > self.max_output_lines:
             truncated_lines = lines[: self.max_output_lines]
-            truncated_lines.append(
-                f"... (truncated, {len(lines) - self.max_output_lines} more lines)"
-            )
+            truncated_lines.append(f"... (truncated, {len(lines) - self.max_output_lines} more lines)")
             return "\n".join(truncated_lines)
 
         return full_text
 
     def _strip_magic_commands(self, source: str) -> str:
         """Strip Jupyter magic commands from source code."""
-        return "\n".join(
-            line
-            for line in source.split("\n")
-            if not line.strip().startswith(("%", "%%"))
-        )
+        return "\n".join(line for line in source.split("\n") if not line.strip().startswith(("%", "%%")))
 
     def _extract_imports(self, cells: list[NotebookCell]) -> dict[str, dict[str, Any]]:
         """Extract import statements from notebook cells."""
@@ -259,9 +248,7 @@ class NotebookExampleExtractor:
                                 if isinstance(target, ast.Name):
                                     var_name = target.id
                                     is_direct = self._is_direct_usage(node.value)
-                                    import_cell_idx = api_info.get(
-                                        "import_cell_idx", cell.index
-                                    )
+                                    import_cell_idx = api_info.get("import_cell_idx", cell.index)
 
                                     track = VariableTrack(
                                         api_path=api_info["api_path"],
@@ -279,15 +266,11 @@ class NotebookExampleExtractor:
 
                                     tracks.append(track)
 
-                    elif isinstance(node, ast.Expr) and isinstance(
-                        node.value, ast.Call
-                    ):
+                    elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
                         api_info = self._identify_api_call(node.value, imports)
 
                         if api_info and api_info["api_path"] in self.api_elements:
-                            import_cell_idx = api_info.get(
-                                "import_cell_idx", cell.index
-                            )
+                            import_cell_idx = api_info.get("import_cell_idx", cell.index)
                             var_name = f"_standalone_call_{cell.index}"
 
                             track = VariableTrack(
@@ -309,15 +292,12 @@ class NotebookExampleExtractor:
                 continue
 
             for var_name, (_, track) in variable_to_api.items():
-                if cell.index > track.init_cell_idx:
-                    if self._cell_references_variable(cell.source, var_name):
-                        track.usage_cell_indices.add(cell.index)
+                if cell.index > track.init_cell_idx and self._cell_references_variable(cell.source, var_name):
+                    track.usage_cell_indices.add(cell.index)
 
         return tracks
 
-    def _identify_api_call(
-        self, node: ast.AST, imports: dict[str, dict[str, Any]]
-    ) -> dict[str, Any] | None:
+    def _identify_api_call(self, node: ast.AST, imports: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
         """Identify if an AST node is a call to a known API element."""
         if not isinstance(node, ast.Call):
             return None
@@ -331,10 +311,7 @@ class NotebookExampleExtractor:
                 module = import_info.get("module", "")
                 from_import = import_info.get("from_import", name)
 
-                if module:
-                    candidate_path = f"{module}.{from_import}"
-                else:
-                    candidate_path = from_import
+                candidate_path = f"{module}.{from_import}" if module else from_import
 
                 resolved_path = self._resolve_api_path(candidate_path)
 
@@ -406,9 +383,8 @@ class NotebookExampleExtractor:
                 if isinstance(node, ast.Name) and node.id == var_name:
                     return True
 
-                if isinstance(node, ast.Attribute):
-                    if isinstance(node.value, ast.Name) and node.value.id == var_name:
-                        return True
+                if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == var_name:
+                    return True
 
         except SyntaxError:
             pattern = r"\b" + re.escape(var_name) + r"\b"
@@ -445,9 +421,7 @@ class NotebookExampleExtractor:
 
         return examples
 
-    def _expand_with_markdown(
-        self, cells: list[NotebookCell], cell_indices: set[int]
-    ) -> set[int]:
+    def _expand_with_markdown(self, cells: list[NotebookCell], cell_indices: set[int]) -> set[int]:
         """Expand cell indices to include neighboring markdown cells."""
         expanded = set(cell_indices)
 
@@ -464,9 +438,7 @@ class NotebookExampleExtractor:
 
         return expanded
 
-    def format_example(
-        self, example: NotebookExample, include_headers: bool = True
-    ) -> str:
+    def format_example(self, example: NotebookExample, include_headers: bool = True) -> str:
         """Format a NotebookExample as a string for inclusion in documentation."""
         lines: list[str] = []
 
@@ -484,8 +456,7 @@ class NotebookExampleExtractor:
                     for line in markdown_lines[: self.max_markdown_lines]:
                         lines.append(f"# {line}")
                     lines.append(
-                        f"# ... (markdown truncated, "
-                        f"{len(markdown_lines) - self.max_markdown_lines} more lines)"
+                        f"# ... (markdown truncated, {len(markdown_lines) - self.max_markdown_lines} more lines)"
                     )
                 else:
                     for line in markdown_lines:
@@ -526,9 +497,7 @@ def extract_notebook_examples_from_repository(
     Returns:
         List of NotebookExample objects
     """
-    extractor = NotebookExampleExtractor(
-        repo_path, api_elements, max_output_lines, max_markdown_lines
-    )
+    extractor = NotebookExampleExtractor(repo_path, api_elements, max_output_lines, max_markdown_lines)
 
     if notebook_paths is None:
         repo_path_obj = Path(repo_path)

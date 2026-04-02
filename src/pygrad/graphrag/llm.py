@@ -1,10 +1,12 @@
 """LLM implementations for neo4j-graphrag integration."""
 
 import os
-from typing import Any, Optional
 
 import httpx
 from neo4j_graphrag.llm import LLMInterface
+from neo4j_graphrag.llm.types import LLMResponse
+from neo4j_graphrag.message_history import MessageHistory
+from neo4j_graphrag.types import LLMMessage
 
 
 class CustomAPILLM(LLMInterface):
@@ -36,15 +38,23 @@ class CustomAPILLM(LLMInterface):
         self.temperature = temperature
         self.max_tokens = max_tokens
 
-    def invoke(self, input: str) -> str:
+    def invoke(
+        self,
+        input: str,
+        message_history: list[LLMMessage] | MessageHistory | None = None,
+        system_instruction: str | None = None,
+    ) -> LLMResponse:
         """Synchronous LLM invocation.
 
         Args:
             input: Input prompt text
+            message_history: Optional prior messages (unused for this provider)
+            system_instruction: Optional system message override (unused)
 
         Returns:
             Generated text response
         """
+        del message_history, system_instruction
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -62,17 +72,26 @@ class CustomAPILLM(LLMInterface):
             response.raise_for_status()
             data = response.json()
 
-        return data["choices"][0]["message"]["content"]
+        content = data["choices"][0]["message"]["content"]
+        return LLMResponse(content=content)
 
-    async def ainvoke(self, input: str) -> str:
+    async def ainvoke(
+        self,
+        input: str,
+        message_history: list[LLMMessage] | MessageHistory | None = None,
+        system_instruction: str | None = None,
+    ) -> LLMResponse:
         """Asynchronous LLM invocation.
 
         Args:
             input: Input prompt text
+            message_history: Optional prior messages (unused for this provider)
+            system_instruction: Optional system message override (unused)
 
         Returns:
             Generated text response
         """
+        del message_history, system_instruction
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -95,7 +114,8 @@ class CustomAPILLM(LLMInterface):
 
             data = response.json()
 
-        return data["choices"][0]["message"]["content"]
+        content = data["choices"][0]["message"]["content"]
+        return LLMResponse(content=content)
 
 
 def create_llm_from_env() -> LLMInterface:
@@ -140,10 +160,8 @@ def create_llm_from_env() -> LLMInterface:
     elif provider == "ollama":
         try:
             from neo4j_graphrag.llm import OllamaLLM
-        except ImportError:
-            raise ImportError(
-                "Ollama support requires: pip install neo4j-graphrag[ollama]"
-            )
+        except ImportError as e:
+            raise ImportError("Ollama support requires: pip install neo4j-graphrag[ollama]") from e
 
         if not endpoint:
             endpoint = "http://localhost:11434"
@@ -156,10 +174,8 @@ def create_llm_from_env() -> LLMInterface:
     elif provider == "openai":
         try:
             from neo4j_graphrag.llm import OpenAILLM
-        except ImportError:
-            raise ImportError(
-                "OpenAI support requires: pip install neo4j-graphrag[openai]"
-            )
+        except ImportError as e:
+            raise ImportError("OpenAI support requires: pip install neo4j-graphrag[openai]") from e
 
         if not api_key:
             raise ValueError("LLM_API_KEY environment variable is required for openai provider")
@@ -170,7 +186,4 @@ def create_llm_from_env() -> LLMInterface:
         )
 
     else:
-        raise ValueError(
-            f"Unsupported LLM_PROVIDER: {provider}. "
-            f"Supported providers: custom, ollama, openai"
-        )
+        raise ValueError(f"Unsupported LLM_PROVIDER: {provider}. Supported providers: custom, ollama, openai")

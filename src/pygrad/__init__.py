@@ -18,48 +18,48 @@ Usage:
     await pg.delete("https://github.com/owner/repo")
 """
 
+from pygrad.config import PYGRAD_HOME, REPO_STORAGE
 from pygrad.core import (
     add,
-    search,
     delete,
+    get_dataset,
     list,
     list_datasets,
+    search,
     visualize,
-    get_dataset,
 )
-from pygrad.repository import clone_repository, get_repository_id
+from pygrad.parser.treesitter import RepoTreeSitter
 from pygrad.processor.processor import (
     ClassInfo,
     FunctionInfo,
     PythonRepositoryProcessor,
     process_repository,
 )
-from pygrad.parser.treesitter import RepoTreeSitter
-from pygrad.config import PYGRAD_HOME, REPO_STORAGE
+from pygrad.repository import clone_repository, get_repository_id
 
 __version__ = "0.1.0"
 
 __all__ = [
-    # Numpy-style API (primary)
-    "add",
-    "search",
-    "delete",
-    "list",
-    "list_datasets",
-    "visualize",
-    "get_dataset",
-    # Repository utilities
-    "clone_repository",
-    "get_repository_id",
+    # Configuration
+    "PYGRAD_HOME",
+    "REPO_STORAGE",
     # Processor
     "ClassInfo",
     "FunctionInfo",
     "PythonRepositoryProcessor",
-    "process_repository",
     # Parser
     "RepoTreeSitter",
-    # Configuration
-    "PYGRAD_HOME",
-    "REPO_STORAGE",
     "__version__",
+    # Numpy-style API (primary)
+    "add",
+    # Repository utilities
+    "clone_repository",
+    "delete",
+    "get_dataset",
+    "get_repository_id",
+    "list",
+    "list_datasets",
+    "process_repository",
+    "search",
+    "visualize",
 ]

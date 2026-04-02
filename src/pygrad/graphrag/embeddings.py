@@ -1,7 +1,8 @@
 """Embedding implementations for neo4j-graphrag integration."""
 
+import contextlib
 import os
-from typing import List
+from typing import Any, cast
 
 import httpx
 from neo4j import Driver
@@ -37,7 +38,7 @@ class CustomEmbedder(Embedder):
         self.endpoint = endpoint
         self.dimensions = dimensions
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         """Generate embedding for a query text.
 
         Args:
@@ -133,10 +134,8 @@ def create_embedder_from_env() -> Embedder:
     elif provider == "ollama":
         try:
             from neo4j_graphrag.embeddings import OllamaEmbeddings
-        except ImportError:
-            raise ImportError(
-                "Ollama support requires: pip install neo4j-graphrag[ollama]"
-            )
+        except ImportError as e:
+            raise ImportError("Ollama support requires: pip install neo4j-graphrag[ollama]") from e
 
         if not endpoint:
             endpoint = "http://localhost:11434"
@@ -149,10 +148,8 @@ def create_embedder_from_env() -> Embedder:
     elif provider == "openai":
         try:
             from neo4j_graphrag.embeddings import OpenAIEmbeddings
-        except ImportError:
-            raise ImportError(
-                "OpenAI support requires: pip install neo4j-graphrag[openai]"
-            )
+        except ImportError as e:
+            raise ImportError("OpenAI support requires: pip install neo4j-graphrag[openai]") from e
 
         api_key = os.getenv("LLM_API_KEY")
         if not api_key:
@@ -164,10 +161,7 @@ def create_embedder_from_env() -> Embedder:
         )
 
     else:
-        raise ValueError(
-            f"Unsupported EMBEDDING_PROVIDER: {provider}. "
-            f"Supported providers: custom, ollama, openai"
-        )
+        raise ValueError(f"Unsupported EMBEDDING_PROVIDER: {provider}. Supported providers: custom, ollama, openai")
 
 
 def setup_vector_indexes(
@@ -190,10 +184,8 @@ def setup_vector_indexes(
             index_name = f"{repository_id}_{node_type}_embeddings"
 
             # Drop existing index if present (escape with backticks for special chars)
-            try:
-                session.run(f"DROP INDEX `{index_name}` IF EXISTS")
-            except Exception:
-                pass
+            with contextlib.suppress(Exception):
+                session.run(cast(Any, f"DROP INDEX `{index_name}` IF EXISTS"))
 
             # Create vector index (escape with backticks for special chars)
             query = f"""
@@ -207,7 +199,7 @@ def setup_vector_indexes(
                 }}
             }}
             """
-            session.run(query)
+            session.run(cast(Any, query))
 
 
 async def generate_and_store_embeddings(
@@ -251,7 +243,7 @@ async def generate_and_store_embeddings(
                 RETURN n.api_path as api_path, n.description as description, elementId(n) as id
                 """
 
-            result = session.run(query, repository_id=repository_id)
+            result = session.run(cast(Any, query), repository_id=repository_id)
             nodes = list(result)
 
             count = 0
@@ -262,11 +254,11 @@ async def generate_and_store_embeddings(
                     # Generate embedding text based on node type
                     if node_type == "Example":
                         # For examples: source_file:line + code snippet
-                        source_file = node.get('source_file', '')
-                        line = node.get('line', '')
-                        source_code = node.get('source_code', '')
+                        source_file = node.get("source_file", "")
+                        line = node.get("line", "")
+                        source_code = node.get("source_code", "")
                         # Take first 500 chars of code to keep embedding focused
-                        code_snippet = source_code[:500] if source_code else ''
+                        code_snippet = source_code[:500] if source_code else ""
                         text = f"{source_file}:{line}\n{code_snippet}"
                     else:
                         # For API elements: api_path: description

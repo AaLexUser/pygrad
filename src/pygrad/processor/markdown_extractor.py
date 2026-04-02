@@ -11,6 +11,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 
 @dataclass
@@ -69,15 +70,16 @@ class MarkdownExampleExtractor:
         if candidate_path in self.api_elements:
             return candidate_path
 
-        matches = self.simplified_to_qualified.get(candidate_path)
-        if matches:
-            return next(iter(matches)) if len(matches) == 1 else min(matches, key=len)
-
-        return None
+        matches: set[str] | None = self.simplified_to_qualified.get(candidate_path)
+        if matches is None:
+            return None
+        if len(matches) == 1:
+            return next(iter(matches))
+        return cast(str, min(matches, key=len))
 
     def extract_from_markdown(self, markdown_path: str) -> list[MarkdownExample]:
         """Extract examples from a single Markdown file."""
-        with open(markdown_path, "r", encoding="utf-8") as f:
+        with open(markdown_path, encoding="utf-8") as f:
             content = f.read()
 
         code_blocks = self._extract_code_blocks(content, markdown_path)
@@ -91,9 +93,7 @@ class MarkdownExampleExtractor:
 
         return examples
 
-    def extract_from_markdowns(
-        self, markdown_paths: list[str]
-    ) -> list[MarkdownExample]:
+    def extract_from_markdowns(self, markdown_paths: list[str]) -> list[MarkdownExample]:
         """Extract examples from multiple Markdown files."""
         all_examples: list[MarkdownExample] = []
 
@@ -105,9 +105,7 @@ class MarkdownExampleExtractor:
 
         return all_examples
 
-    def _extract_code_blocks(
-        self, content: str, source_file: str
-    ) -> list[MarkdownCodeBlock]:
+    def _extract_code_blocks(self, content: str, source_file: str) -> list[MarkdownCodeBlock]:
         """Extract code blocks from Markdown content with their context."""
         blocks: list[MarkdownCodeBlock] = []
         lines = content.split("\n")
@@ -149,9 +147,7 @@ class MarkdownExampleExtractor:
 
         return blocks
 
-    def _find_preceding_context(
-        self, lines: list[str], code_start_index: int
-    ) -> tuple[str | None, str | None]:
+    def _find_preceding_context(self, lines: list[str], code_start_index: int) -> tuple[str | None, str | None]:
         """Find the preceding header and text paragraph before a code block."""
         header = None
         text_lines: list[str] = []

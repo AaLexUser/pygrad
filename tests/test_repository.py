@@ -47,9 +47,7 @@ class TestCloneRepository:
 
     def test_clone_invalid_url_raises_error(self, temp_dir):
         """Test that cloning from invalid URL raises RuntimeError."""
-        url = (
-            "https://github.com/definitely-not-a-real-owner/definitely-not-a-real-repo"
-        )
+        url = "https://github.com/definitely-not-a-real-owner/definitely-not-a-real-repo"
         with pytest.raises(RuntimeError, match="Failed to clone repository"):
             clone_repository(url, temp_dir / "cloned_repo")
 

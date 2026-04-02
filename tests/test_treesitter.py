@@ -1,7 +1,5 @@
 """Tests for tree-sitter AST parser."""
 
-import pytest
-
 from pygrad.parser.treesitter import RepoTreeSitter
 
 
@@ -43,9 +41,7 @@ class TestRepoTreeSitter:
         assert "imports" in structure
 
         # Find the greet function
-        functions = [
-            item for item in structure["structure"] if item["type"] == "function"
-        ]
+        functions = [item for item in structure["structure"] if item["type"] == "function"]
         greet_funcs = [f for f in functions if f["details"]["method_name"] == "greet"]
         assert len(greet_funcs) == 1
 
@@ -79,12 +75,8 @@ class TestRepoTreeSitter:
         parser = RepoTreeSitter(str(temp_dir))
         structure = parser.extract_structure(str(sample_python_file))
 
-        functions = [
-            item for item in structure["structure"] if item["type"] == "function"
-        ]
-        helper_funcs = [
-            f for f in functions if f["details"]["method_name"] == "helper_function"
-        ]
+        functions = [item for item in structure["structure"] if item["type"] == "function"]
+        helper_funcs = [f for f in functions if f["details"]["method_name"] == "helper_function"]
         assert len(helper_funcs) == 1
         assert "@staticmethod" in helper_funcs[0]["details"]["decorators"]
 

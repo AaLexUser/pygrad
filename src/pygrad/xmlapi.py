@@ -23,9 +23,7 @@ def _get_examples(elem: ET.Element) -> list[str]:
         source_code = _get_text(example_elem, "source_code")
 
         if source_code.strip():
-            examples.append(
-                f'<example from="{from_}" type="{type_}">\n{source_code}\n</example>'
-            )
+            examples.append(f'<example from="{from_}" type="{type_}">\n{source_code}\n</example>')
     return examples
 
 
@@ -121,4 +119,4 @@ def extract_entities(
         return classes, methods, functions, examples
 
     except Exception as e:
-        raise RuntimeError(f"Error extracting entities from api.xml: {e}")
+        raise RuntimeError(f"Error extracting entities from api.xml: {e}") from e

@@ -2,33 +2,36 @@
 
 from __future__ import annotations
 
+import builtins
+import contextlib
 import os
 from pathlib import Path
-from typing import Any, List, TYPE_CHECKING
-
-from neo4j import GraphDatabase
+from typing import TYPE_CHECKING, Any, cast
 
 from dotenv import load_dotenv
-load_dotenv()
+from neo4j import GraphDatabase
 
 if TYPE_CHECKING:
     import cognee
     from cognee.api.v1.visualize.visualize import visualize_graph
     from cognee.modules.engine.operations.setup import setup
 
+from pygrad.cognee_search import execute_cognee_search
 from pygrad.config import REPO_STORAGE, ensure_storage_exists
-from pygrad.repository import clone_repository, get_repository_id
-from pygrad.xmlapi import extract_entities
-from pygrad.processor.processor import process_repository, process_repository_to_neo4j
-from pygrad.prompt_store import prompt_store
-from pygrad.graphrag.config import get_search_backend, SearchBackend, get_neo4j_config
+from pygrad.graphrag.common import NODE_LABELS
+from pygrad.graphrag.config import SearchBackend, get_neo4j_config, get_search_backend
 from pygrad.graphrag.embeddings import (
     create_embedder_from_env,
-    setup_vector_indexes,
     generate_and_store_embeddings,
+    setup_vector_indexes,
 )
 from pygrad.graphrag.pipeline import PyGradRAGPipeline
-from pygrad.graphrag.common import NODE_LABELS
+from pygrad.processor.processor import process_repository, process_repository_to_neo4j
+from pygrad.prompt_store import prompt_store
+from pygrad.repository import clone_repository, get_repository_id
+from pygrad.xmlapi import extract_entities
+
+load_dotenv()
 
 
 async def add(url: str) -> None:
@@ -74,8 +77,10 @@ async def add(url: str) -> None:
             clear_existing=False,
         )
 
-        print(f"Created {stats['classes']} classes, {stats['functions']} functions, "
-              f"{stats['methods']} methods, {stats['examples']} examples")
+        print(
+            f"Created {stats['classes']} classes, {stats['functions']} functions, "
+            f"{stats['methods']} methods, {stats['examples']} examples"
+        )
 
         # Setup vector indexes and generate embeddings
         driver = GraphDatabase.driver(
@@ -135,30 +140,13 @@ async def search(url: str, query: str) -> str:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
-        await setup()
         dataset = await get_dataset(repo_id)
 
         if not dataset:
             return "The library is not yet indexed."
 
         system_prompt = prompt_store.load("grad.md")
-        result = await cognee.search(
-            query_text=query,
-            dataset_ids=[dataset.id],
-            query_type=cognee.SearchType.GRAPH_COMPLETION_CONTEXT_EXTENSION,
-            system_prompt=system_prompt,
-        )
-
-        if isinstance(result, builtins_list):
-            if not result:
-                return "No results found."
-            return "\n".join(
-                str(item.get("search_result", ["No results found."])[0])  # type: ignore[union-attr]
-                for item in result
-            )
-        if result and hasattr(result, "result") and result.result:
-            return str(result.result)
-        return "No results found."
+        return await execute_cognee_search(dataset.id, query, system_prompt)
 
     elif backend == SearchBackend.NEO4J_GRAPHRAG:
         # Get Neo4j configuration
@@ -177,7 +165,8 @@ async def search(url: str, query: str) -> str:
                     "MATCH (n {repository_id: $repo_id}) RETURN count(n) as count",
                     repo_id=repo_id,
                 )
-                count = result.single()["count"]
+                row = result.single()
+                count = row["count"] if row is not None else 0
                 if count == 0:
                     return "The library is not yet indexed."
 
@@ -281,16 +270,14 @@ async def delete(url: str) -> None:
                 # Drop vector indexes for this repository
                 for node_type in NODE_LABELS:
                     index_name = f"{repo_id}_{node_type}_embeddings"
-                    try:
-                        session.run(f"DROP INDEX `{index_name}` IF EXISTS")
-                    except Exception:
-                        pass  # Index might not exist
+                    with contextlib.suppress(Exception):
+                        session.run(cast(Any, f"DROP INDEX `{index_name}` IF EXISTS"))
 
         finally:
             driver.close()
 
 
-async def list_datasets() -> List[Any]:
+async def list_datasets() -> builtins.list[Any]:
     """List all indexed datasets (repositories).
 
     Returns:
@@ -335,10 +322,14 @@ async def list_datasets() -> List[Any]:
                 for record in result:
                     repo_id = record["repository_id"]
                     # Create a simple object with name and id attributes
-                    dataset = type("Dataset", (), {
-                        "name": repo_id,
-                        "id": repo_id,
-                    })()
+                    dataset = type(
+                        "Dataset",
+                        (),
+                        {
+                            "name": repo_id,
+                            "id": repo_id,
+                        },
+                    )()
                     datasets.append(dataset)
 
                 return datasets
@@ -348,11 +339,6 @@ async def list_datasets() -> List[Any]:
 
     return []
 
-
-# Keep a reference to built-in list for isinstance checks
-import builtins
-
-builtins_list = builtins.list
 
 # Alias for numpy-style API (pg.list())
 list = list_datasets
@@ -375,7 +361,7 @@ async def _create_xml_api_doc(url: str) -> Path:
     return xml_api_path
 
 
-def _split_xml_api(xml_api_path: Path) -> List[str]:
+def _split_xml_api(xml_api_path: Path) -> builtins.list[str]:
     """Split XML API into documents for indexing."""
     classes, methods, functions, examples = extract_entities(xml_api_path)
     return [*classes, *methods, *functions, *examples]
@@ -384,6 +370,7 @@ def _split_xml_api(xml_api_path: Path) -> List[str]:
 async def _cognee_add_xml_api(xml_api_path: Path, dataset_name: str) -> None:
     """Add XML API to Cognee knowledge graph."""
     import cognee
+
     custom_prompt = """
     Extract methods, functions and classes as entities, add their parameters to description.
     Connect classes to methods with the relationship "has_method".

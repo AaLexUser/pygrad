@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="PyGrad",
-    description="REST API for PyGrad – search knowledge graphs built from Python repositories.",
+    description="REST API for PyGrad - search knowledge graphs built from Python repositories.",
     version="0.1.0",
 )
 

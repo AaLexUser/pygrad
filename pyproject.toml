@@ -8,22 +8,7 @@ version = "0.1.0"
 description = "Graph RAG API Doc - Build searchable knowledge graphs from Python repository documentation"
 readme = "README.md"
 license = "BSD-3-Clause"
-requires-python = ">=3.10"
-authors = [
-    { name = "Pygrad Contributors" }
-]
-keywords = ["rag", "knowledge-graph", "api-documentation", "python", "cognee"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Documentation",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
+requires-python = ">=3.11"
 
 dependencies = [
     "cognee>=0.1.0",
@@ -69,7 +54,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 120
 src = ["src"]
 
@@ -95,7 +80,7 @@ known-first-party = ["pygrad"]
 [tool.ty]
 
 [tool.ty.environment]
-python-version = "3.10"
+python-version = "3.11"
 
 [tool.ty.rules]
 all = "warn"

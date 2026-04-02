@@ -1,6 +1,7 @@
 """Tests for notebook example extractor."""
 
 import json
+
 import pytest
 
 from pygrad.processor.notebook_extractor import (
@@ -172,17 +173,13 @@ class TestExtractNotebookExamplesFromRepository:
         """Test extraction when no notebooks exist."""
         api_elements = {"pkg.Class"}
 
-        examples = extract_notebook_examples_from_repository(
-            str(temp_dir), api_elements
-        )
+        examples = extract_notebook_examples_from_repository(str(temp_dir), api_elements)
 
         assert examples == []
 
     def test_extract_with_empty_api_elements(self, sample_notebook):
         """Test extraction with empty API elements."""
-        examples = extract_notebook_examples_from_repository(
-            str(sample_notebook.parent), set()
-        )
+        examples = extract_notebook_examples_from_repository(str(sample_notebook.parent), set())
 
         assert examples == []
 

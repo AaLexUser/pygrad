@@ -1,12 +1,11 @@
 """Retriever implementations for neo4j-graphrag integration."""
 
-from typing import Any, List
+import contextlib
 
-from neo4j import Driver
+from neo4j import Driver, Record
 from neo4j_graphrag.embeddings import Embedder
 from neo4j_graphrag.retrievers import VectorCypherRetriever
 from neo4j_graphrag.types import RetrieverResultItem
-
 
 from pygrad.graphrag.common import NODE_LABELS
 
@@ -79,18 +78,18 @@ def create_repository_retriever(
         """
 
     # Result formatter to convert to LLM-ready text
-    def format_result(record: dict[str, Any]) -> RetrieverResultItem:
+    def format_result(record: Record) -> RetrieverResultItem:
         """Format retrieval result as RetrieverResultItem for LLM context."""
-        result = record.get("result", {})
+        result = record.get("result") or {}
         score = record.get("score", 0.0)
 
         output = []
 
         # Format differently for Example nodes vs API elements
         if node_type == "Example":
-            source_file = result.get('source_file', 'unknown')
-            line = result.get('line', '?')
-            source_code = result.get('source_code', '')
+            source_file = result.get("source_file", "unknown")
+            line = result.get("line", "?")
+            source_code = result.get("source_code", "")
 
             output.append(f"## Example from {source_file}:{line} (relevance: {score:.3f})")
             output.append(f"\n```python\n{source_code}\n```")
@@ -115,7 +114,9 @@ def create_repository_retriever(
             if examples:
                 output.append("\n**Usage Examples:**")
                 for i, example in enumerate(examples[:3], 1):  # Limit to top 3 examples
-                    output.append(f"\n**Example {i}** (from {example.get('source_file', 'unknown')}:{example.get('line', '?')}):")
+                    output.append(
+                        f"\n**Example {i}** (from {example.get('source_file', 'unknown')}:{example.get('line', '?')}):"
+                    )
                     output.append(f"```python\n{example.get('source_code', '')}\n```")
 
         content = "\n".join(output)
@@ -176,7 +177,7 @@ class MultiIndexRetriever:
         self,
         query_text: str,
         top_k: int = 5,
-    ) -> List[str]:
+    ) -> list[str]:
         """Search across all node types and return combined results.
 
         Args:
@@ -202,22 +203,17 @@ class MultiIndexRetriever:
                 print(f"Warning: Search failed for {node_type}: {e}")
 
         # Sort by score if available and return unique results
-        try:
+        with contextlib.suppress(Exception):
             all_results.sort(
                 key=lambda x: getattr(x, "score", 0.0) if hasattr(x, "score") else 0.0,
                 reverse=True,
             )
-        except Exception:
-            pass
 
         # Format and deduplicate results
         formatted = []
         seen = set()
         for result in all_results[:top_k]:
-            if hasattr(result, "content"):
-                content = result.content
-            else:
-                content = str(result)
+            content = result.content if hasattr(result, "content") else str(result)
 
             # Simple deduplication based on content hash
             content_hash = hash(content[:100])  # Hash first 100 chars
