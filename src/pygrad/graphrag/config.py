@@ -62,9 +62,8 @@ def get_search_backend() -> SearchBackend:
     except ValueError:
         valid_values = [b.value for b in SearchBackend]
         raise ValueError(
-            f"Invalid SEARCH_BACKEND value: {backend_str}. "
-            f"Must be one of: {', '.join(valid_values)}"
-        )
+            f"Invalid SEARCH_BACKEND value: {backend_str}. Must be one of: {', '.join(valid_values)}"
+        ) from None
 
 
 def get_neo4j_config() -> Neo4jConfig:

@@ -1,5 +1,6 @@
 """Neo4j graph converter for Python repository data."""
 
+import contextlib
 import hashlib
 import json
 from typing import TYPE_CHECKING, Any
@@ -113,17 +114,16 @@ class Neo4jGraphConverter:
                 for example_json in func.usage_examples:
                     example_id = self._create_example_node(session, example_json, repository_id)
                     if example_id:
-                        self._create_example_relationship(
-                            session, func.api_path, example_id, "Function", repository_id
-                        )
+                        self._create_example_relationship(session, func.api_path, example_id, "Function", repository_id)
                         stats["relationships"] += 1
 
             # Count unique examples for this repository
             result = session.run(
                 "MATCH (e:Example {repository_id: $repository_id}) RETURN count(e) as count",
-                repository_id=repository_id
+                repository_id=repository_id,
             )
-            stats["examples"] = result.single()["count"]
+            row = result.single()
+            stats["examples"] = row["count"] if row is not None else 0
 
             return stats
 
@@ -146,16 +146,12 @@ class Neo4jGraphConverter:
         ]
 
         for constraint in constraints:
-            try:
+            with contextlib.suppress(Exception):
                 session.run(constraint)
-            except Exception:
-                pass  # Constraint might already exist
 
         for index in indexes:
-            try:
+            with contextlib.suppress(Exception):
                 session.run(index)
-            except Exception:
-                pass  # Index might already exist
 
     def _create_class_node(self, session, class_info: "ClassInfo", repository_id: str) -> None:
         """Create a Class node."""
@@ -195,9 +191,7 @@ class Neo4jGraphConverter:
             output=func.output,
         )
 
-    def _create_method_node(
-        self, session, method: "FunctionInfo", class_api_path: str, repository_id: str
-    ) -> None:
+    def _create_method_node(self, session, method: "FunctionInfo", class_api_path: str, repository_id: str) -> None:
         """Create a Method node and link it to its Class."""
         # Create method node
         query = """

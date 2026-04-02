@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pygrad.processor.processor import ClassInfo, FunctionInfo
 from pygrad.processor.neo4j_graph import Neo4jGraphConverter
+from pygrad.processor.processor import ClassInfo, FunctionInfo
 
 
 @pytest.fixture
@@ -85,9 +85,7 @@ def test_neo4j_converter_initialization(mock_graph_db):
 
     converter = Neo4jGraphConverter("bolt://localhost:7687", "neo4j", "password")
 
-    mock_graph_db.driver.assert_called_once_with(
-        "bolt://localhost:7687", auth=("neo4j", "password")
-    )
+    mock_graph_db.driver.assert_called_once_with("bolt://localhost:7687", auth=("neo4j", "password"))
     assert converter.driver == mock_driver
     assert converter.database == "neo4j"
 

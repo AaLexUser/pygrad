@@ -10,8 +10,8 @@ from xml.dom import minidom
 
 from pygrad.parser.treesitter import RepoTreeSitter
 from pygrad.processor.example_extractor import extract_examples_from_repository
-from pygrad.processor.utils import extract_important_api, extract_test_example_paths
 from pygrad.processor.neo4j_graph import Neo4jGraphConverter
+from pygrad.processor.utils import extract_important_api, extract_test_example_paths
 
 
 @dataclass
@@ -64,14 +64,10 @@ async def process_repository(
     processor = PythonRepositoryProcessor(str(repo_path))
     classes, functions = processor.process_repository_data()
 
-    api_usage_groups = extract_examples_from_repository(
-        str(repo_path), processor.analysis_results
-    )
+    api_usage_groups = extract_examples_from_repository(str(repo_path), processor.analysis_results)
     processor._merge_examples_into_data(classes, functions, api_usage_groups)
 
-    output_path = processor.save_repository_data(
-        classes, functions, important_files, output_file
-    )
+    output_path = processor.save_repository_data(classes, functions, important_files, output_file)
 
     result = f"Repository: {repository_path}\n"
     result += f"Important files: {len(important_files)}\n"
@@ -109,9 +105,7 @@ async def process_repository_to_neo4j(
     processor = PythonRepositoryProcessor(str(repo_path))
     classes, functions = processor.process_repository_data()
 
-    api_usage_groups = extract_examples_from_repository(
-        str(repo_path), processor.analysis_results
-    )
+    api_usage_groups = extract_examples_from_repository(str(repo_path), processor.analysis_results)
     processor._merge_examples_into_data(classes, functions, api_usage_groups)
 
     stats = processor.save_repository_to_neo4j(
@@ -143,10 +137,7 @@ class PythonRepositoryProcessor:
 
         # Exclude test and example dirs
         paths = extract_test_example_paths(self.repo_path)
-        exclusions = [
-            Path(p).relative_to(self.repo_path)
-            for p in paths["test"] + paths["example"]
-        ]
+        exclusions = [Path(p).relative_to(self.repo_path) for p in paths["test"] + paths["example"]]
 
         def is_excluded(api_path: str) -> bool:
             p = Path(api_path.replace(".", "/"))
@@ -196,14 +187,10 @@ class PythonRepositoryProcessor:
         Returns:
             Dictionary with counts of created nodes and relationships
         """
-        with Neo4jGraphConverter(
-            neo4j_uri, neo4j_username, neo4j_password, database
-        ) as converter:
+        with Neo4jGraphConverter(neo4j_uri, neo4j_username, neo4j_password, database) as converter:
             return converter.save_repository_graph(classes, functions, repository_id, clear_existing)
 
-    def _process_analysis_results(
-        self, analysis_results: dict[str, Any]
-    ) -> tuple[list[ClassInfo], list[FunctionInfo]]:
+    def _process_analysis_results(self, analysis_results: dict[str, Any]) -> tuple[list[ClassInfo], list[FunctionInfo]]:
         """Process tree-sitter results into structured data."""
         classes = []
         functions = []
@@ -217,16 +204,14 @@ class PythonRepositoryProcessor:
                 elif item["type"] == "function":
                     func_name = item["details"]["method_name"]
                     if not func_name.startswith("_"):
-                        functions.append(
-                            self._process_function(item["details"], module_path)
-                        )
+                        functions.append(self._process_function(item["details"], module_path))
 
         return classes, functions
 
     def _get_module_path(self, filename: str) -> str:
         """Generate module path from filename."""
         rel_path = Path(filename).relative_to(self.repo_path)
-        module_parts = list(rel_path.parts)[:-1] + [rel_path.stem]
+        module_parts = [*list(rel_path.parts)[:-1], rel_path.stem]
         module_parts = [p for p in module_parts if p and p != "__init__"]
         return ".".join(module_parts)
 
@@ -237,26 +222,19 @@ class PythonRepositoryProcessor:
         description = self._clean_docstring(class_item.get("docstring", ""))
 
         init_method = next(
-            (
-                m
-                for m in class_item.get("methods", [])
-                if m["method_name"] == "__init__"
-            ),
+            (m for m in class_item.get("methods", []) if m["method_name"] == "__init__"),
             None,
         )
 
         initialization = {
             "parameters": ", ".join(init_method["arguments"] if init_method else []),
-            "description": self._clean_docstring(
-                init_method["docstring"] if init_method else ""
-            ),
+            "description": self._clean_docstring(init_method["docstring"] if init_method else ""),
         }
 
         methods = [
             self._process_method(method, api_path)
             for method in class_item.get("methods", [])
-            if method["method_name"] != "__init__"
-            and not method["method_name"].startswith("_")
+            if method["method_name"] != "__init__" and not method["method_name"].startswith("_")
         ]
 
         return ClassInfo(
@@ -268,9 +246,7 @@ class PythonRepositoryProcessor:
             usage_examples=[],
         )
 
-    def _process_function(
-        self, func_item: dict[str, Any], module_path: str
-    ) -> FunctionInfo:
+    def _process_function(self, func_item: dict[str, Any], module_path: str) -> FunctionInfo:
         """Process a function from tree-sitter analysis."""
         name = func_item["method_name"]
         api_path = f"{module_path}.{name}" if module_path else name
@@ -290,9 +266,7 @@ class PythonRepositoryProcessor:
             usage_examples=[],
         )
 
-    def _process_method(
-        self, method_item: dict[str, Any], class_api_path: str
-    ) -> FunctionInfo:
+    def _process_method(self, method_item: dict[str, Any], class_api_path: str) -> FunctionInfo:
         """Process a method from tree-sitter analysis."""
         name = method_item["method_name"]
         api_path = f"{class_api_path}.{name}"
@@ -331,22 +305,16 @@ class PythonRepositoryProcessor:
         for function in functions:
             if function.api_path in api_usage_groups:
                 usage_group = api_usage_groups[function.api_path]
-                function.usage_examples = [
-                    self._format_usage_example(ex) for ex in usage_group.examples
-                ]
+                function.usage_examples = [self._format_usage_example(ex) for ex in usage_group.examples]
 
         for class_info in classes:
             if class_info.api_path in api_usage_groups:
                 usage_group = api_usage_groups[class_info.api_path]
-                class_info.usage_examples = [
-                    self._format_usage_example(ex) for ex in usage_group.examples
-                ]
+                class_info.usage_examples = [self._format_usage_example(ex) for ex in usage_group.examples]
             for method in class_info.methods:
                 if method.api_path in api_usage_groups:
                     usage_group = api_usage_groups[method.api_path]
-                    method.usage_examples = [
-                        self._format_usage_example(ex) for ex in usage_group.examples
-                    ]
+                    method.usage_examples = [self._format_usage_example(ex) for ex in usage_group.examples]
 
     def _make_relative_path(self, path: str) -> str:
         """Convert an absolute path to a path relative to the repository root.
@@ -368,7 +336,6 @@ class PythonRepositoryProcessor:
         except (ValueError, TypeError):
             # If conversion fails (path is outside repo), return as is
             return path
-
 
     def _format_usage_example(self, example: Any) -> str:
         """Format a UsageExample as JSON string."""
@@ -396,7 +363,7 @@ class PythonRepositoryProcessor:
         files_elem = ET.SubElement(root, "important_files")
         for file_path, score in important_files:
             file_elem = ET.SubElement(files_elem, "file")
-            file_elem.set("score", str(int(round(score))))
+            file_elem.set("score", str(round(score)))
             file_elem.text = self._make_relative_path(file_path)
 
         # Classes
@@ -407,12 +374,8 @@ class PythonRepositoryProcessor:
             ET.SubElement(cls_elem, "description").text = cls.description
 
             init_elem = ET.SubElement(cls_elem, "initialization")
-            ET.SubElement(init_elem, "parameters").text = cls.initialization[
-                "parameters"
-            ]
-            ET.SubElement(init_elem, "description").text = cls.initialization[
-                "description"
-            ]
+            ET.SubElement(init_elem, "parameters").text = cls.initialization["parameters"]
+            ET.SubElement(init_elem, "description").text = cls.initialization["description"]
 
             methods_elem = ET.SubElement(cls_elem, "methods")
             for method in cls.methods:
@@ -426,9 +389,7 @@ class PythonRepositoryProcessor:
 
         return self._prettify_xml(ET.tostring(root, encoding="unicode"))
 
-    def _add_function_to_xml(
-        self, parent: ET.Element, func: FunctionInfo, tag: str
-    ) -> None:
+    def _add_function_to_xml(self, parent: ET.Element, func: FunctionInfo, tag: str) -> None:
         """Add function/method to XML."""
         elem = ET.SubElement(parent, tag)
         ET.SubElement(elem, "name").text = func.name
@@ -448,9 +409,7 @@ class PythonRepositoryProcessor:
                 for key in ("from", "type", "line", "variable", "header"):
                     if data.get(key) is not None:
                         ET.SubElement(example_elem, key).text = str(data[key])
-                ET.SubElement(example_elem, "source_code").text = data.get(
-                    "source_code", ""
-                )
+                ET.SubElement(example_elem, "source_code").text = data.get("source_code", "")
             except (json.JSONDecodeError, TypeError):
                 example_elem.text = example
 
@@ -460,6 +419,6 @@ class PythonRepositoryProcessor:
         xml_string = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", xml_string)
         try:
             dom = minidom.parseString(xml_string)
-            return dom.toprettyxml(indent="  ", encoding=None)  # type: ignore
+            return dom.toprettyxml(indent="  ", encoding=None)
         except Exception:
             return xml_string

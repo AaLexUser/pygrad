@@ -1,7 +1,6 @@
 """Python source code AST parser using tree-sitter."""
 
 import os
-from pathlib import Path
 from typing import Any
 
 import tree_sitter
@@ -42,7 +41,7 @@ class RepoTreeSitter:
     @staticmethod
     def open_file(file: str) -> str:
         """Read file contents."""
-        with open(file, encoding="utf-8", mode="r") as f:
+        with open(file, encoding="utf-8") as f:
             return f.read()
 
     def _build_parser(self) -> Parser:
@@ -64,18 +63,14 @@ class RepoTreeSitter:
                         return c_c.text.decode("utf-8") if c_c.text else None
         return None
 
-    def _get_decorators(
-        self, dec_list: list[str], dec_node: tree_sitter.Node
-    ) -> list[str]:
+    def _get_decorators(self, dec_list: list[str], dec_node: tree_sitter.Node) -> list[str]:
         """Extract decorators from node."""
         for decorator in dec_node.children:
             if decorator.type in ("identifier", "call") and decorator.text:
                 dec_list.append(f"@{decorator.text.decode('utf-8')}")
         return dec_list
 
-    def _get_attributes(
-        self, class_attributes: list[str], block_node: tree_sitter.Node
-    ) -> list[str]:
+    def _get_attributes(self, class_attributes: list[str], block_node: tree_sitter.Node) -> list[str]:
         """Get class attributes from block."""
         for node in block_node.children:
             if node.type == "expression_statement":
@@ -86,9 +81,7 @@ class RepoTreeSitter:
                                 class_attributes.append(c.text.decode("utf-8"))
         return class_attributes
 
-    def _resolve_import_path(
-        self, import_text: str, current_file: str | None = None
-    ) -> dict[str, Any]:
+    def _resolve_import_path(self, import_text: str, current_file: str | None = None) -> dict[str, Any]:
         """Resolve import path from import statement."""
         import_mapping: dict[str, Any] = {}
 
@@ -110,9 +103,7 @@ class RepoTreeSitter:
 
             for entity in imported_entities:
                 if " as " in entity:
-                    imported_name, alias_name = [
-                        e.strip() for e in entity.split(" as ", 1)
-                    ]
+                    imported_name, alias_name = [e.strip() for e in entity.split(" as ", 1)]
                 else:
                     imported_name = entity
                     alias_name = imported_name
@@ -143,9 +134,7 @@ class RepoTreeSitter:
 
         return import_mapping
 
-    def _find_module_path(
-        self, module_name: str, current_file: str | None
-    ) -> str | None:
+    def _find_module_path(self, module_name: str, current_file: str | None) -> str | None:
         """Find the file path for a module."""
         if module_name.startswith(".") and current_file:
             level = len(module_name) - len(module_name.lstrip("."))
@@ -165,9 +154,7 @@ class RepoTreeSitter:
             pkg_path = os.path.join(self.cwd, *module_name.split("."), "__init__.py")
             return pkg_path if os.path.exists(pkg_path) else None
 
-    def _extract_imports(
-        self, root_node: tree_sitter.Node, current_file: str | None = None
-    ) -> dict[str, Any]:
+    def _extract_imports(self, root_node: tree_sitter.Node, current_file: str | None = None) -> dict[str, Any]:
         """Extract imports from AST root."""
         import_map: dict[str, Any] = {}
         for node in root_node.children:
@@ -189,11 +176,7 @@ class RepoTreeSitter:
             dec_list = []
 
         name_node = function_node.child_by_field_name("name")
-        method_name = (
-            name_node.text.decode("utf-8")
-            if name_node and name_node.text
-            else "unknown"
-        )
+        method_name = name_node.text.decode("utf-8") if name_node and name_node.text else "unknown"
         start_line = function_node.start_point[0] + 1
 
         docstring = None
@@ -214,9 +197,7 @@ class RepoTreeSitter:
                     arguments.append(param_node.text.decode("utf-8"))
 
         source_bytes = source_code.encode("utf-8")
-        source = source_bytes[function_node.start_byte : function_node.end_byte].decode(
-            "utf-8"
-        )
+        source = source_bytes[function_node.start_byte : function_node.end_byte].decode("utf-8")
 
         return_node = function_node.child_by_field_name("return_type")
         return_type = None
@@ -246,15 +227,9 @@ class RepoTreeSitter:
                     if dec_child.type == "decorator":
                         dec_list = self._get_decorators(dec_list, dec_child)
                     elif dec_child.type == "function_definition":
-                        methods.append(
-                            self._extract_function_details(
-                                dec_child, source_code, imports, dec_list
-                            )
-                        )
+                        methods.append(self._extract_function_details(dec_child, source_code, imports, dec_list))
             elif child.type == "function_definition":
-                methods.append(
-                    self._extract_function_details(child, source_code, imports)
-                )
+                methods.append(self._extract_function_details(child, source_code, imports))
         return methods
 
     def _class_parser(
@@ -269,11 +244,7 @@ class RepoTreeSitter:
             dec_list = []
 
         name_node = node.child_by_field_name("name")
-        class_name = (
-            name_node.text.decode("utf-8")
-            if name_node and name_node.text
-            else "Unknown"
-        )
+        class_name = name_node.text.decode("utf-8") if name_node and name_node.text else "Unknown"
         start_line = node.start_point[0] + 1
         class_methods: list[dict[str, Any]] = []
         class_attributes: list[str] = []
@@ -283,15 +254,9 @@ class RepoTreeSitter:
             if child.type == "block":
                 class_attributes = self._get_attributes(class_attributes, child)
                 docstring = self._get_docstring(child)
-                class_methods.extend(
-                    self._traverse_block(child, source_code, structure["imports"])
-                )
+                class_methods.extend(self._traverse_block(child, source_code, structure["imports"]))
             elif child.type == "function_definition":
-                class_methods.append(
-                    self._extract_function_details(
-                        child, source_code, structure["imports"]
-                    )
-                )
+                class_methods.append(self._extract_function_details(child, source_code, structure["imports"]))
 
         structure["structure"].append(
             {
@@ -315,9 +280,7 @@ class RepoTreeSitter:
         """Parse function definition."""
         if dec_list is None:
             dec_list = []
-        method_details = self._extract_function_details(
-            node, source_code, structure["imports"], dec_list
-        )
+        method_details = self._extract_function_details(node, source_code, structure["imports"], dec_list)
         structure["structure"].append(
             {
                 "type": "function",
@@ -342,9 +305,7 @@ class RepoTreeSitter:
                     elif dec_node.type == "class_definition":
                         self._class_parser(structure, source_code, dec_node, dec_list)
                     elif dec_node.type == "function_definition":
-                        self._function_parser(
-                            structure, source_code, dec_node, dec_list
-                        )
+                        self._function_parser(structure, source_code, dec_node, dec_list)
             elif node.type == "function_definition":
                 self._function_parser(structure, source_code, node)
             elif node.type == "class_definition":

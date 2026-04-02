@@ -1,6 +1,5 @@
 """Pytest fixtures for pygrad tests."""
 
-import os
 import tempfile
 from pathlib import Path
 
@@ -22,10 +21,10 @@ def sample_python_file(temp_dir):
 
 def greet(name: str) -> str:
     """Greet someone by name.
-    
+
     Args:
         name: The name to greet
-        
+
     Returns:
         A greeting string
     """
@@ -34,20 +33,20 @@ def greet(name: str) -> str:
 
 class Calculator:
     """A simple calculator class."""
-    
+
     def __init__(self, initial_value: int = 0):
         """Initialize the calculator.
-        
+
         Args:
             initial_value: Starting value
         """
         self.value = initial_value
-    
+
     def add(self, x: int) -> int:
         """Add x to the current value."""
         self.value += x
         return self.value
-    
+
     def _internal_method(self):
         """This should be excluded (private)."""
         pass
@@ -79,11 +78,11 @@ def sample_repo(temp_dir):
 
 class Core:
     """Core class."""
-    
+
     def __init__(self):
         """Initialize Core."""
         pass
-    
+
     def run(self) -> None:
         """Run the core."""
         pass

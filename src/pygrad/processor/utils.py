@@ -89,9 +89,7 @@ def extract_important_api(repo_path: Path, top_n: int = 15) -> list[tuple[str, f
     treesitter = RepoTreeSitter(str(repo_path))
     structure = treesitter.analyze_directory(str(repo_path))
 
-    exclusions = (
-        [".git", ".github", "__init__", "__pycache__"] + test_paths + example_paths
-    )
+    exclusions = [".git", ".github", "__init__", "__pycache__", *test_paths, *example_paths]
 
     included = {}
     excluded = {}
@@ -146,11 +144,7 @@ def _rank_by_multi_factor_scoring(
 
         if filename in ("utils", "helpers", "helper", "util") and score < 10:
             continue
-        if (
-            filename.startswith("_")
-            and filename not in ("__init__", "__main__")
-            and score < 50
-        ):
+        if filename.startswith("_") and filename not in ("__init__", "__main__") and score < 50:
             continue
         if filename == "__init__":
             continue
@@ -226,10 +220,7 @@ def _naming_score(file_path: str) -> float:
     filename = Path(file_path).stem
     score = 0.0
 
-    if any(
-        name in filename.lower()
-        for name in ("base", "core", "api", "client", "interface")
-    ):
+    if any(name in filename.lower() for name in ("base", "core", "api", "client", "interface")):
         score += 20
     if filename.startswith("_") and filename not in ("__init__", "__main__"):
         score -= 20
@@ -280,9 +271,7 @@ def _code_metrics_score(file_structure: dict[str, Any]) -> float:
     for item in structure:
         if item["type"] == "class":
             class_name = item.get("name", "")
-            if any(
-                kw in class_name for kw in ("Base", "Abstract", "Protocol", "Interface")
-            ):
+            if any(kw in class_name for kw in ("Base", "Abstract", "Protocol", "Interface")):
                 score += 15
                 break
 

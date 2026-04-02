@@ -10,7 +10,7 @@ class TestExtractEntities:
 
     def test_extract_classes(self, sample_api_xml):
         """Test extracting class information from XML."""
-        classes, methods, functions, examples = extract_entities(sample_api_xml)
+        classes, _methods, _functions, _examples = extract_entities(sample_api_xml)
 
         assert len(classes) == 1
         class_text = classes[0]
@@ -20,7 +20,7 @@ class TestExtractEntities:
 
     def test_extract_methods(self, sample_api_xml):
         """Test extracting method information from XML."""
-        classes, methods, functions, examples = extract_entities(sample_api_xml)
+        _classes, methods, _functions, _examples = extract_entities(sample_api_xml)
 
         assert len(methods) == 1
         method_text = methods[0]
@@ -29,7 +29,7 @@ class TestExtractEntities:
 
     def test_extract_functions(self, sample_api_xml):
         """Test extracting function information from XML."""
-        classes, methods, functions, examples = extract_entities(sample_api_xml)
+        _classes, _methods, functions, _examples = extract_entities(sample_api_xml)
 
         assert len(functions) == 1
         func_text = functions[0]
@@ -39,7 +39,7 @@ class TestExtractEntities:
 
     def test_extract_examples(self, sample_api_xml):
         """Test extracting usage examples from XML."""
-        classes, methods, functions, examples = extract_entities(sample_api_xml)
+        _classes, _methods, _functions, examples = extract_entities(sample_api_xml)
 
         assert len(examples) == 1
         example_text = examples[0]
@@ -77,7 +77,7 @@ class TestExtractEntities:
 
     def test_class_with_initialization(self, sample_api_xml):
         """Test that initialization info is extracted."""
-        classes, methods, functions, examples = extract_entities(sample_api_xml)
+        classes, _methods, _functions, _examples = extract_entities(sample_api_xml)
 
         class_text = classes[0]
         assert "initial_value" in class_text

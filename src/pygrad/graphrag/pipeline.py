@@ -90,6 +90,6 @@ Based on the context provided above, answer the user's query. Include relevant c
         # Generate response
         try:
             response = await self.llm.ainvoke(full_prompt)
-            return response
+            return response.content
         except Exception as e:
-            return f"Error generating response: {str(e)}"
+            return f"Error generating response: {e!s}"

@@ -141,7 +141,7 @@ class TestMarkdownExampleExtractor:
             "```",
         ]
 
-        header, text = extractor._find_preceding_context(lines, 2)
+        header, _text = extractor._find_preceding_context(lines, 2)
 
         assert header == "Header"
 
@@ -154,7 +154,7 @@ class TestMarkdownExampleExtractor:
             "```",
         ]
 
-        header2, text2 = extractor._find_preceding_context(lines2, 2)
+        _header2, text2 = extractor._find_preceding_context(lines2, 2)
 
         assert text2 == "Some text description."
 
@@ -210,9 +210,7 @@ class TestExtractMarkdownExamplesFromRepository:
 
     def test_extract_with_empty_api_elements(self, sample_markdown):
         """Test extraction with empty API elements."""
-        examples = extract_markdown_examples_from_repository(
-            str(sample_markdown.parent), set()
-        )
+        examples = extract_markdown_examples_from_repository(str(sample_markdown.parent), set())
 
         assert examples == []
 

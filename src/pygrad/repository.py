@@ -20,9 +20,7 @@ def get_repository_id(url: str) -> str:
     parsed_url = urlparse(url)
     path_parts = parsed_url.path.strip("/").split("/")
     if len(path_parts) < 2:
-        raise RuntimeError(
-            f"Invalid GitHub URL format. Expected: https://github.com/owner/repo. Got: {url}"
-        )
+        raise RuntimeError(f"Invalid GitHub URL format. Expected: https://github.com/owner/repo. Got: {url}")
     owner, repo_name = path_parts[-2:]
     return f"{owner.lower()}-{repo_name.lower()}"
 
@@ -48,4 +46,4 @@ def clone_repository(url: str, path: str | Path) -> None:
         raise RuntimeError(
             f"Failed to clone repository from {url}: {e.stderr}. "
             f"Please provide a valid git URL or ensure the repository exists."
-        )
+        ) from e

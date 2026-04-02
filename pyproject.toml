@@ -8,25 +8,10 @@ version = "0.1.0"
 description = "Graph RAG API Doc - Build searchable knowledge graphs from Python repository documentation"
 readme = "README.md"
 license = "BSD-3-Clause"
-requires-python = ">=3.10"
-authors = [
-    { name = "Pygrad Contributors" }
-]
-keywords = ["rag", "knowledge-graph", "api-documentation", "python", "cognee"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Documentation",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
+requires-python = ">=3.11"
 
 dependencies = [
-    "cognee>=0.1.0",
+    "cognee>=0.5.6",
     "litellm>=1.81.6",
     "tree-sitter>=0.21.0",
     "tree-sitter-python>=0.21.0",
@@ -41,6 +26,8 @@ dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "httpx>=0.27.0",
+    "ruff>=0.11.0",
+    "ty>=0.0.27",
 ]
 docs = [
     "mkdocs-material>=9.0.0",
@@ -65,3 +52,42 @@ packages = ["src/pygrad"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pygrad"]
+
+[tool.ty]
+
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.rules]
+all = "warn"
+
+[[tool.ty.overrides]]
+include = ["tests/**", "**/test_*.py"]
+
+[tool.ty.overrides.rules]
+all = "warn"
+possibly-unresolved-reference = "ignore"

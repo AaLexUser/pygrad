@@ -4,18 +4,13 @@ import argparse
 import asyncio
 import sys
 
-from dotenv import load_dotenv
-load_dotenv()
-
 import pygrad as pg
 from pygrad import get_repository_id
 
 
 def main() -> None:
     """Main CLI entry point."""
-    parser = argparse.ArgumentParser(
-        description="Pygrad - Graph RAG API Doc", prog="pygrad"
-    )
+    parser = argparse.ArgumentParser(description="Pygrad - Graph RAG API Doc", prog="pygrad")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Add command
@@ -31,16 +26,12 @@ def main() -> None:
     subparsers.add_parser("list", help="List indexed repositories")
 
     # Delete command
-    delete_parser = subparsers.add_parser(
-        "delete", help="Delete repository from knowledge graph"
-    )
+    delete_parser = subparsers.add_parser("delete", help="Delete repository from knowledge graph")
     delete_parser.add_argument("url", help="Repository URL")
 
     # Visualize command
     vis_parser = subparsers.add_parser("visualize", help="Visualize knowledge graph")
-    vis_parser.add_argument(
-        "-o", "--output", default="./pygrad.html", help="Output path"
-    )
+    vis_parser.add_argument("-o", "--output", default="./pygrad.html", help="Output path")
 
     args = parser.parse_args()
 
