@@ -247,7 +247,7 @@ async def delete(url: str) -> None:
         await setup()
         dataset = await get_dataset(repo_id)
         if dataset:
-            await cognee.datasets.delete_dataset(dataset.id)
+            await cognee.datasets.empty_dataset(dataset.id)
 
     elif backend == SearchBackend.NEO4J_GRAPHRAG:
         # Get Neo4j configuration
