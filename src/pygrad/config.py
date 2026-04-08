@@ -36,5 +36,4 @@ def configure_logging_from_env() -> None:
     logging.basicConfig(
         level=level,
         format="%(levelname)s %(name)s: %(message)s",
-        force=True,
     )

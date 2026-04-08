@@ -120,8 +120,6 @@ async def add(url: str) -> None:
             )
             print(f"Created vector indexes for repository: {repo_id}")
 
-            # Generate and store embeddings
-            embedder = create_embedder_from_env()
             embedding_stats = await generate_and_store_embeddings(
                 driver=driver,
                 repository_id=repo_id,

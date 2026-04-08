@@ -99,7 +99,7 @@ class CustomAPILLM(LLMInterface):
         message = data["choices"][0]["message"]
         content = message.get("content") or ""
         if (content_len := len(content)) == 0:
-            (logger.error("LLM returned empty response."),)
+            logger.error("LLM returned empty response.")
         else:
             logger.debug("LLM response length: %d chars", content_len)
         return LLMResponse(content=content)
@@ -147,7 +147,7 @@ class CustomAPILLM(LLMInterface):
         message = data["choices"][0]["message"]
         content = message.get("content") or ""
         if (content_len := len(content)) == 0:
-            (logger.error("LLM returned empty response."),)
+            logger.error("LLM returned empty response.")
         else:
             logger.debug("LLM response length: %d chars", content_len)
         return LLMResponse(content=content)

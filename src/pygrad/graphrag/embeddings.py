@@ -170,7 +170,7 @@ def create_embedder_from_env() -> Embedder:
             raise ImportError("OpenAI support requires: pip install neo4j-graphrag[openai]") from e
 
         if not api_key:
-            raise ValueError("LLM_API_KEY environment variable is required for openai provider")
+            raise ValueError("EMBEDDING_API_KEY or LLM_API_KEY environment variable is required for openai provider")
 
         return OpenAIEmbeddings(
             model=model,
