@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import builtins
 import contextlib
+import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -17,13 +18,15 @@ if TYPE_CHECKING:
     from cognee.modules.engine.operations.setup import setup
 
 from pygrad.cognee_search import execute_cognee_search
-from pygrad.config import REPO_STORAGE, ensure_storage_exists
+from pygrad.config import REPO_STORAGE, configure_logging_from_env, ensure_storage_exists
 from pygrad.graphrag.common import NODE_LABELS
 from pygrad.graphrag.config import SearchBackend, get_neo4j_config, get_search_backend
 from pygrad.graphrag.embeddings import (
     create_embedder_from_env,
     generate_and_store_embeddings,
+    get_embedding_dimensions_from_env,
     setup_vector_indexes,
+    validate_embedding_dimensions_for_index,
 )
 from pygrad.graphrag.pipeline import PyGradRAGPipeline
 from pygrad.processor.processor import process_repository, process_repository_to_neo4j
@@ -32,6 +35,9 @@ from pygrad.repository import clone_repository, get_repository_id
 from pygrad.xmlapi import extract_entities
 
 load_dotenv()
+configure_logging_from_env()
+
+logger = logging.getLogger(__name__)
 
 
 async def add(url: str) -> None:
@@ -89,8 +95,21 @@ async def add(url: str) -> None:
         )
 
         try:
-            # Get embedding dimensions from environment
-            dimensions = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
+            dimensions = get_embedding_dimensions_from_env()
+            embedder = create_embedder_from_env()
+            validate_embedding_dimensions_for_index(dimensions, embedder)
+            env_raw = os.getenv("EMBEDDING_DIMENSIONS")
+            if env_raw is None:
+                logger.info(
+                    "Embedding index dimensions: %s (EMBEDDING_DIMENSIONS not set; using default)",
+                    dimensions,
+                )
+            else:
+                logger.info(
+                    "Embedding index dimensions: %s (EMBEDDING_DIMENSIONS=%s)",
+                    dimensions,
+                    env_raw,
+                )
 
             # Create vector indexes
             setup_vector_indexes(
@@ -101,8 +120,6 @@ async def add(url: str) -> None:
             )
             print(f"Created vector indexes for repository: {repo_id}")
 
-            # Generate and store embeddings
-            embedder = create_embedder_from_env()
             embedding_stats = await generate_and_store_embeddings(
                 driver=driver,
                 repository_id=repo_id,
@@ -167,6 +184,7 @@ async def search(url: str, query: str) -> str:
                 )
                 row = result.single()
                 count = row["count"] if row is not None else 0
+                logger.debug("Repository %s: %d nodes in graph", repo_id, count)
                 if count == 0:
                     return "The library is not yet indexed."
 
@@ -178,6 +196,7 @@ async def search(url: str, query: str) -> str:
             )
 
             response = await pipeline.search(query, top_k=5)
+            logger.debug("Search response: %d chars", len(response))
             return response
 
         finally:

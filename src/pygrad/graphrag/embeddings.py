@@ -11,6 +11,23 @@ from tqdm import trange
 
 from pygrad.graphrag.common import NODE_LABELS
 
+_DEFAULT_EMBEDDING_DIMENSIONS = 768
+
+
+def get_embedding_dimensions_from_env() -> int:
+    """Return vector size from ``EMBEDDING_DIMENSIONS``"""
+    return int(os.getenv("EMBEDDING_DIMENSIONS", str(_DEFAULT_EMBEDDING_DIMENSIONS)))
+
+
+def validate_embedding_dimensions_for_index(dimensions: int, embedder: Embedder) -> None:
+    """Raise if an embedder that declares width disagrees with ``dimensions``."""
+    if isinstance(embedder, CustomEmbedder) and embedder.dimensions != dimensions:
+        msg = (
+            f"EMBEDDING_DIMENSIONS ({dimensions}) must match CustomEmbedder.dimensions "
+            f"({embedder.dimensions}); both should come from the same env configuration."
+        )
+        raise ValueError(msg)
+
 
 class CustomEmbedder(Embedder):
     """Custom embedder implementation for OpenAI-compatible embedding APIs.
@@ -38,11 +55,13 @@ class CustomEmbedder(Embedder):
         self.endpoint = endpoint
         self.dimensions = dimensions
 
-    def embed_query(self, text: str) -> list[float]:
+    def embed_query(self, text: str, **kwargs: Any) -> list[float]:
         """Generate embedding for a query text.
 
         Args:
             text: Text to embed
+            **kwargs: Extra JSON fields for the embedding API (e.g. OpenAI-compatible).
+                ``dimensions`` defaults to ``self.dimensions`` but can be overridden.
 
         Returns:
             Embedding vector as list of floats
@@ -52,10 +71,12 @@ class CustomEmbedder(Embedder):
             "Content-Type": "application/json",
         }
 
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "input": text,
+            "dimensions": self.dimensions,
         }
+        payload.update(kwargs)
 
         with httpx.Client(timeout=60.0) as client:
             response = client.post(self.endpoint, json=payload, headers=headers)
@@ -109,7 +130,9 @@ def create_embedder_from_env() -> Embedder:
     provider = os.getenv("EMBEDDING_PROVIDER", "").lower()
     model = os.getenv("EMBEDDING_MODEL")
     endpoint = os.getenv("EMBEDDING_ENDPOINT")
-    dimensions = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
+    dimensions = get_embedding_dimensions_from_env()
+    # Try EMBEDDING_API_KEY first, fall back to LLM_API_KEY
+    api_key = os.getenv("EMBEDDING_API_KEY") or os.getenv("LLM_API_KEY")
 
     if not provider:
         raise ValueError("EMBEDDING_PROVIDER environment variable is required")
@@ -117,8 +140,6 @@ def create_embedder_from_env() -> Embedder:
         raise ValueError("EMBEDDING_MODEL environment variable is required")
 
     if provider == "custom":
-        # Try EMBEDDING_API_KEY first, fall back to LLM_API_KEY
-        api_key = os.getenv("EMBEDDING_API_KEY") or os.getenv("LLM_API_KEY")
         if not api_key:
             raise ValueError("EMBEDDING_API_KEY or LLM_API_KEY environment variable is required for custom provider")
         if not endpoint:
@@ -137,12 +158,9 @@ def create_embedder_from_env() -> Embedder:
         except ImportError as e:
             raise ImportError("Ollama support requires: pip install neo4j-graphrag[ollama]") from e
 
-        if not endpoint:
-            endpoint = "http://localhost:11434"
-
         return OllamaEmbeddings(
             model=model,
-            host=endpoint,
+            host=endpoint or "http://localhost:11434",
         )
 
     elif provider == "openai":
@@ -151,13 +169,13 @@ def create_embedder_from_env() -> Embedder:
         except ImportError as e:
             raise ImportError("OpenAI support requires: pip install neo4j-graphrag[openai]") from e
 
-        api_key = os.getenv("LLM_API_KEY")
         if not api_key:
-            raise ValueError("LLM_API_KEY environment variable is required for openai provider")
+            raise ValueError("EMBEDDING_API_KEY or LLM_API_KEY environment variable is required for openai provider")
 
         return OpenAIEmbeddings(
             model=model,
             api_key=api_key,
+            base_url=endpoint,
         )
 
     else:
