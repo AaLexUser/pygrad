@@ -1,6 +1,7 @@
 """Retriever implementations for neo4j-graphrag integration."""
 
 import contextlib
+import logging
 
 from neo4j import Driver, Record
 from neo4j_graphrag.embeddings import Embedder
@@ -8,6 +9,8 @@ from neo4j_graphrag.retrievers import VectorCypherRetriever
 from neo4j_graphrag.types import RetrieverResultItem
 
 from pygrad.graphrag.common import NODE_LABELS
+
+logger = logging.getLogger(__name__)
 
 
 def create_repository_retriever(
@@ -40,7 +43,7 @@ def create_repository_retriever(
             source_file: node.source_file,
             source_code: node.source_code,
             line: node.line
-        } as result
+        } AS result, score
         """
     else:
         # Custom Cypher query with repository filtering and graph traversal for API elements
@@ -54,18 +57,18 @@ def create_repository_retriever(
         OPTIONAL MATCH (node)-[:CONTAINS]->(method:Method)
         WHERE method.repository_id = $repository_id
 
-        WITH node,
+        WITH node, score,
              collect(DISTINCT {
                  source_file: example.source_file,
                  source_code: example.source_code,
                  line: example.line
-             }) as examples,
+             }) AS examples,
              collect(DISTINCT {
                  name: method.name,
                  api_path: method.api_path,
                  description: method.description,
                  header: method.header
-             }) as methods
+             }) AS methods
 
         RETURN {
             api_path: node.api_path,
@@ -74,7 +77,7 @@ def create_repository_retriever(
             header: node.header,
             examples: [ex IN examples WHERE ex.source_code IS NOT NULL],
             methods: [m IN methods WHERE m.name IS NOT NULL]
-        } as result
+        } AS result, score
         """
 
     # Result formatter to convert to LLM-ready text
@@ -170,8 +173,7 @@ class MultiIndexRetriever:
                     database=database,
                 )
             except Exception as e:
-                # Gracefully handle missing indexes
-                print(f"Warning: Could not create retriever for {node_label}: {e}")
+                logger.warning("Could not create retriever for %s: %s", node_label, e)
 
     async def search(
         self,
@@ -197,17 +199,22 @@ class MultiIndexRetriever:
                     top_k=top_k,
                     query_params={"repository_id": self.repository_id},
                 )
+                logger.debug(
+                    "Retrieved %d items for %s",
+                    len(results.items),
+                    node_type,
+                )
                 all_results.extend(results.items)
             except Exception as e:
-                # Gracefully handle search errors
-                print(f"Warning: Search failed for {node_type}: {e}")
+                logger.warning("Search failed for %s: %s", node_type, e)
 
-        # Sort by score if available and return unique results
+        def _item_score(item: RetrieverResultItem) -> float:
+            meta = item.metadata or {}
+            s = meta.get("score")
+            return float(s) if s is not None else 0.0
+
         with contextlib.suppress(Exception):
-            all_results.sort(
-                key=lambda x: getattr(x, "score", 0.0) if hasattr(x, "score") else 0.0,
-                reverse=True,
-            )
+            all_results.sort(key=_item_score, reverse=True)
 
         # Format and deduplicate results
         formatted = []
