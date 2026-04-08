@@ -1,11 +1,16 @@
 """RAG pipeline implementation for neo4j-graphrag."""
 
+import logging
+
+import httpx
 from neo4j import Driver
 
 from pygrad.graphrag.embeddings import create_embedder_from_env
 from pygrad.graphrag.llm import create_llm_from_env
 from pygrad.graphrag.retriever import MultiIndexRetriever
 from pygrad.prompt_store import prompt_store
+
+logger = logging.getLogger(__name__)
 
 
 class PyGradRAGPipeline:
@@ -87,9 +92,15 @@ The following information was retrieved from the repository:
 Based on the context provided above, answer the user's query. Include relevant code examples from the context when applicable.
 """
 
-        # Generate response
         try:
             response = await self.llm.ainvoke(full_prompt)
+            if not response.content:
+                logger.error("LLM returned empty content for query: %.100s", query)
+                return "LLM returned an empty response. Try again or check LLM configuration."
             return response.content
+        except (TimeoutError, httpx.TimeoutException):
+            logger.error("LLM request timed out")
+            return "LLM request timed out. Consider increasing the timeout or using a faster model."
         except Exception as e:
-            return f"Error generating response: {e!s}"
+            logger.error("LLM error: %s: %s", type(e).__name__, e)
+            return f"Error generating response: {type(e).__name__}: {e}"

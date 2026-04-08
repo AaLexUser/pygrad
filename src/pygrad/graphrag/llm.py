@@ -1,12 +1,31 @@
 """LLM implementations for neo4j-graphrag integration."""
 
+import logging
 import os
+from typing import Any
 
 import httpx
 from neo4j_graphrag.llm import LLMInterface
 from neo4j_graphrag.llm.types import LLMResponse
 from neo4j_graphrag.message_history import MessageHistory
 from neo4j_graphrag.types import LLMMessage
+
+logger = logging.getLogger(__name__)
+
+
+def _log_llm_request(endpoint: str, model: str, payload: dict[str, Any]) -> None:
+    """Log outgoing chat-completions request (no API keys or auth headers)."""
+    messages = payload.get("messages") or []
+    for i, msg in enumerate(messages):
+        role = msg.get("role", "?")
+        content = msg.get("content") or ""
+        logger.debug(
+            "LLM message[%d] role=%s (%d chars)\n%s",
+            i,
+            role,
+            len(content),
+            content,
+        )
 
 
 class CustomAPILLM(LLMInterface):
@@ -22,6 +41,7 @@ class CustomAPILLM(LLMInterface):
         endpoint: str,
         temperature: float = 0.0,
         max_tokens: int = 2000,
+        timeout: float = 120.0,
     ):
         """Initialize CustomAPILLM.
 
@@ -31,12 +51,14 @@ class CustomAPILLM(LLMInterface):
             endpoint: API endpoint URL
             temperature: Sampling temperature (default: 0.0)
             max_tokens: Maximum tokens in response (default: 2000)
+            timeout: HTTP request timeout in seconds (default: 120.0)
         """
         self.model = model
         self.api_key = api_key
         self.endpoint = endpoint
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.timeout = timeout
 
     def invoke(
         self,
@@ -67,12 +89,19 @@ class CustomAPILLM(LLMInterface):
             "max_tokens": self.max_tokens,
         }
 
-        with httpx.Client(timeout=60.0) as client:
+        _log_llm_request(self.endpoint, self.model, payload)
+
+        with httpx.Client(timeout=self.timeout) as client:
             response = client.post(self.endpoint, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
 
-        content = data["choices"][0]["message"]["content"]
+        message = data["choices"][0]["message"]
+        content = message.get("content") or ""
+        if (content_len := len(content)) == 0:
+            (logger.error("LLM returned empty response."),)
+        else:
+            logger.debug("LLM response length: %d chars", content_len)
         return LLMResponse(content=content)
 
     async def ainvoke(
@@ -104,17 +133,23 @@ class CustomAPILLM(LLMInterface):
             "max_tokens": self.max_tokens,
         }
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        _log_llm_request(self.endpoint, self.model, payload)
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(self.endpoint, json=payload, headers=headers)
 
-            # Better error handling
             if response.status_code != 200:
                 error_detail = response.text
                 raise ValueError(f"API Error {response.status_code}: {error_detail}")
 
             data = response.json()
 
-        content = data["choices"][0]["message"]["content"]
+        message = data["choices"][0]["message"]
+        content = message.get("content") or ""
+        if (content_len := len(content)) == 0:
+            (logger.error("LLM returned empty response."),)
+        else:
+            logger.debug("LLM response length: %d chars", content_len)
         return LLMResponse(content=content)
 
 
@@ -180,10 +215,7 @@ def create_llm_from_env() -> LLMInterface:
         if not api_key:
             raise ValueError("LLM_API_KEY environment variable is required for openai provider")
 
-        return OpenAILLM(
-            model_name=model,
-            api_key=api_key,
-        )
+        return OpenAILLM(model_name=model, api_key=api_key, base_url=endpoint)
 
     else:
         raise ValueError(f"Unsupported LLM_PROVIDER: {provider}. Supported providers: custom, ollama, openai")
