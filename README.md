@@ -1,10 +1,13 @@
-# pygrad
+<div align="center">
 
-Build searchable knowledge graphs from Python repository documentation using Graph RAG.
+# `pygrad`
 
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://aalexuser.github.io/pygrad/)
-[![License](https://img.shields.io/badge/license-BSD%203--Clause-blue)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10+-blue)](https://python.org)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-white)](https://aalexuser.github.io/pygrad/)
+[![License](https://img.shields.io/badge/license-BSD%203--Clause-white)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11+-white)](https://python.org)
+
+**Build searchable knowledge graphs from Python repository documentation using Graph RAG.**
+</div>
 
 ## Installation
 
@@ -84,16 +87,6 @@ docker run -p 8446:8446 --env-file .env pygrad-server
 
 The server exposes the same five operations as the CLI. See the [REST Server API docs](https://aalexuser.github.io/pygrad/api/server/) for endpoint details.
 
-## Features
-
-- **Dual Search Backends**: Choose between Cognee or Neo4j GraphRAG
-- **Graph RAG Search**: Semantic search powered by knowledge graphs
-- **Automatic API Extraction**: Parses classes, functions, methods, and docstrings
-- **Usage Example Mining**: Finds real examples from tests and documentation
-- **Repository Isolation**: Multiple repositories in a single Neo4j database
-- **Vector Search**: Semantic similarity search with embeddings
-- **Local LLM Support**: Works with Ollama for fully offline operation
-- **Tree-sitter Parsing**: Fast and accurate Python code analysis
 
 ## How It Works
 
@@ -116,8 +109,6 @@ Repository → Parse (TreeSitter) → Extract API → Build Graph → Search (RA
 | Vector Search | ✓ | ✓ |
 | Graph Traversal | ✓ | ✓ (Cypher) |
 | Visualization | Built-in | Neo4j Browser |
-| Production Ready | ✓ | ✓ |
-| Custom Queries | Limited | Full Cypher |
 
 ## API Reference
 
