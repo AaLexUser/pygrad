@@ -1,4 +1,5 @@
 from __future__ import annotations
+import contextlib
 
 import os
 import sys
@@ -37,7 +38,9 @@ def setup_logging(level: str | None = None) -> None:
     Reads ``PYGRAD_LOG_LEVEL`` from the environment if *level* is not given.
     """
     resolved = level or os.getenv("PYGRAD_LOG_LEVEL", "DEBUG")
-    logger.remove()
+    with contextlib.suppress(ValueError):
+        logger.remove(0)  # remove loguru's default stderr sink
+
     logger.add(sys.stderr, format=_FORMAT, level=resolved.upper())
 
     log_dir = _log_dir()
