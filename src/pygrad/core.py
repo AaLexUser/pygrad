@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from cognee.modules.engine.operations.setup import setup
 
 from pygrad.cognee_search import execute_cognee_search
-from pygrad.common.log import get_logger, setup_logging
+from pygrad.common.log import get_logger
 from pygrad.config import REPO_STORAGE, ensure_storage_exists
 from pygrad.graphrag.common import NODE_LABELS
 from pygrad.graphrag.config import SearchBackend, get_neo4j_config, get_search_backend
@@ -35,7 +35,6 @@ from pygrad.repository import clone_repository, get_repository_id
 from pygrad.xmlapi import extract_entities
 
 load_dotenv()
-setup_logging()
 
 logger = get_logger(__name__)
 

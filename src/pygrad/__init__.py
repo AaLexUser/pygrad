@@ -18,6 +18,7 @@ Usage:
     await pg.delete("https://github.com/owner/repo")
 """
 
+from pygrad.common.log import setup_logging
 from pygrad.config import PYGRAD_HOME, REPO_STORAGE
 from pygrad.core import (
     add,
@@ -36,6 +37,8 @@ from pygrad.processor.processor import (
     process_repository,
 )
 from pygrad.repository import clone_repository, get_repository_id
+
+setup_logging()
 
 __version__ = "0.0.1"
 
