@@ -1,16 +1,16 @@
 """Retriever implementations for neo4j-graphrag integration."""
 
 import contextlib
-import logging
 
 from neo4j import Driver, Record
 from neo4j_graphrag.embeddings import Embedder
 from neo4j_graphrag.retrievers import VectorCypherRetriever
 from neo4j_graphrag.types import RetrieverResultItem
 
+from pygrad.common.log import get_logger
 from pygrad.graphrag.common import NODE_LABELS
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_repository_retriever(
@@ -173,7 +173,7 @@ class MultiIndexRetriever:
                     database=database,
                 )
             except Exception as e:
-                logger.warning("Could not create retriever for %s: %s", node_label, e)
+                logger.warning("Could not create retriever for {}: {}", node_label, e)
 
     async def search(
         self,
@@ -200,13 +200,13 @@ class MultiIndexRetriever:
                     query_params={"repository_id": self.repository_id},
                 )
                 logger.debug(
-                    "Retrieved %d items for %s",
+                    "Retrieved {} items for {}",
                     len(results.items),
                     node_type,
                 )
                 all_results.extend(results.items)
             except Exception as e:
-                logger.warning("Search failed for %s: %s", node_type, e)
+                logger.warning("Search failed for {}: {}", node_type, e)
 
         def _item_score(item: RetrieverResultItem) -> float:
             meta = item.metadata or {}

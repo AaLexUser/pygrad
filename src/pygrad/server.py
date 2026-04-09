@@ -6,7 +6,6 @@ Run with:
 
 from __future__ import annotations
 
-import logging
 import os
 import tempfile
 
@@ -15,8 +14,9 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 import pygrad as pg
+from pygrad.common.log import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 app = FastAPI(
     title="PyGrad",
@@ -103,4 +103,4 @@ async def _index_repo(url: str) -> None:
     try:
         await pg.add(url)
     except Exception:
-        logger.exception("Failed to index %s", url)
+        logger.exception("Failed to index {}", url)

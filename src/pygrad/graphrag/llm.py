@@ -1,6 +1,5 @@
 """LLM implementations for neo4j-graphrag integration."""
 
-import logging
 import os
 from typing import Any
 
@@ -10,7 +9,9 @@ from neo4j_graphrag.llm.types import LLMResponse
 from neo4j_graphrag.message_history import MessageHistory
 from neo4j_graphrag.types import LLMMessage
 
-logger = logging.getLogger(__name__)
+from pygrad.common.log import get_logger
+
+logger = get_logger(__name__)
 
 
 def _log_llm_request(endpoint: str, model: str, payload: dict[str, Any]) -> None:
@@ -20,7 +21,7 @@ def _log_llm_request(endpoint: str, model: str, payload: dict[str, Any]) -> None
         role = msg.get("role", "?")
         content = msg.get("content") or ""
         logger.debug(
-            "LLM message[%d] role=%s (%d chars)\n%s",
+            "LLM message[{}] role={} ({} chars)\n{}",
             i,
             role,
             len(content),
@@ -101,7 +102,7 @@ class CustomAPILLM(LLMInterface):
         if (content_len := len(content)) == 0:
             logger.error("LLM returned empty response.")
         else:
-            logger.debug("LLM response length: %d chars", content_len)
+            logger.debug("LLM response length: {} chars", content_len)
         return LLMResponse(content=content)
 
     async def ainvoke(
@@ -149,7 +150,7 @@ class CustomAPILLM(LLMInterface):
         if (content_len := len(content)) == 0:
             logger.error("LLM returned empty response.")
         else:
-            logger.debug("LLM response length: %d chars", content_len)
+            logger.debug("LLM response length: {} chars", content_len)
         return LLMResponse(content=content)
 
 
