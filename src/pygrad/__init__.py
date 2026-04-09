@@ -37,7 +37,7 @@ from pygrad.processor.processor import (
 )
 from pygrad.repository import clone_repository, get_repository_id
 
-__version__ = "0.1.0"
+__version__ = "0.0.1"
 
 __all__ = [
     # Configuration
