@@ -6,15 +6,10 @@ import builtins
 import contextlib
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
-
-if TYPE_CHECKING:
-    import cognee
-    from cognee.api.v1.visualize.visualize import visualize_graph
-    from cognee.modules.engine.operations.setup import setup
 
 from pygrad.cognee_search import execute_cognee_search
 from pygrad.common.log import get_logger
@@ -39,6 +34,21 @@ load_dotenv()
 logger = get_logger(__name__)
 
 
+def _get_cognee_runtime():
+    """Import Cognee runtime dependencies only when the backend needs them."""
+    import cognee
+    from cognee.modules.engine.operations.setup import setup
+
+    return cognee, setup
+
+
+def _get_visualize_graph():
+    """Import Cognee visualization only when requested."""
+    from cognee.api.v1.visualize.visualize import visualize_graph
+
+    return visualize_graph
+
+
 async def add(url: str) -> None:
     """Add a repository to the knowledge graph.
 
@@ -57,6 +67,7 @@ async def add(url: str) -> None:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
+        _, setup = _get_cognee_runtime()
         await setup()
         xml_api_path = await _create_xml_api_doc(url)
         await _cognee_add_xml_api(xml_api_path, repo_id)
@@ -217,6 +228,8 @@ async def visualize(path: str = "./pygrad.html") -> str:
         >>> import pygrad as pg
         >>> await pg.visualize("./knowledge-graph.html")
     """
+    _, setup = _get_cognee_runtime()
+    visualize_graph = _get_visualize_graph()
     await setup()
     await visualize_graph(path)
     return path
@@ -238,6 +251,7 @@ async def get_dataset(dataset_name: str, default: Any = None) -> Any:
         >>> repo_id = get_repository_id("https://github.com/owner/repo")
         >>> dataset = await pg.get_dataset(repo_id)
     """
+    _, setup = _get_cognee_runtime()
     await setup()
     datasets = await list_datasets()
     for dataset in datasets:
@@ -262,6 +276,7 @@ async def delete(url: str) -> None:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
+        cognee, setup = _get_cognee_runtime()
         await setup()
         dataset = await get_dataset(repo_id)
         if dataset:
@@ -310,6 +325,7 @@ async def list_datasets() -> builtins.list[Any]:
     backend = get_search_backend()
 
     if backend == SearchBackend.COGNEE:
+        cognee, setup = _get_cognee_runtime()
         await setup()
         return await cognee.datasets.list_datasets()
 
