@@ -251,8 +251,6 @@ async def get_dataset(dataset_name: str, default: Any = None) -> Any:
         >>> repo_id = get_repository_id("https://github.com/owner/repo")
         >>> dataset = await pg.get_dataset(repo_id)
     """
-    _, setup = _get_cognee_runtime()
-    await setup()
     datasets = await list_datasets()
     for dataset in datasets:
         if dataset.name.lower() == dataset_name.lower():
