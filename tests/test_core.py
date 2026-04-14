@@ -129,9 +129,7 @@ def install_fake_cognee_runtime(monkeypatch, *, datasets=None, search_result=Non
         list_datasets=list_datasets,
         empty_dataset=empty_dataset,
     )
-    cognee_module.SearchType = SimpleNamespace(
-        GRAPH_COMPLETION_CONTEXT_EXTENSION="graph-completion-context-extension"
-    )
+    cognee_module.SearchType = SimpleNamespace(GRAPH_COMPLETION_CONTEXT_EXTENSION="graph-completion-context-extension")
     cognee_module.add = add
     cognee_module.cognify = cognify
     cognee_module.search = search
@@ -322,8 +320,5 @@ class TestNeo4jBackend:
         assert delete_params == {"repo_id": repo_id}
 
         drop_queries = [query for query, _ in session.run_calls[1:]]
-        assert drop_queries == [
-            f"DROP INDEX `{repo_id}_{node_type}_embeddings` IF EXISTS"
-            for node_type in NODE_LABELS
-        ]
+        assert drop_queries == [f"DROP INDEX `{repo_id}_{node_type}_embeddings` IF EXISTS" for node_type in NODE_LABELS]
         assert driver.closed is True
