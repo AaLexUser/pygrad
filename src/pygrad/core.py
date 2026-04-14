@@ -274,8 +274,7 @@ async def delete(url: str) -> None:
     repo_id = get_repository_id(url)
 
     if backend == SearchBackend.COGNEE:
-        cognee, setup = _get_cognee_runtime()
-        await setup()
+        cognee, _ = _get_cognee_runtime()
         dataset = await get_dataset(repo_id)
         if dataset:
             await cognee.datasets.empty_dataset(dataset.id)
